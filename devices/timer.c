@@ -17,6 +17,8 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
+
+
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -90,11 +92,17 @@ timer_elapsed (int64_t then) {
 /* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) {
-	int64_t start = timer_ticks ();
+	 int64_t start = timer_ticks (); 
 	ASSERT (intr_get_level () == INTR_ON);
 
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+	// while (timer_elapsed (start) < ticks)
+		//thread_yield ();
+	 if (timer_elapsed (start) < ticks){
+		// int64_t start_sleep = timer_ticks();
+		// thread_sleep(start_sleep + ticks);
+		thread_sleep(timer_ticks() + ticks);
+	}
+ 
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -125,7 +133,11 @@ timer_print_stats (void) {
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
+
+	thread_wakeup();
 	thread_tick ();
+	
+	 
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

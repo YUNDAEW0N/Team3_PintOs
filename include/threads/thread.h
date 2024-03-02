@@ -92,6 +92,9 @@ struct thread {
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
 
+	/*일어날 시간 tick 추가해야 할듯*/
+	int64_t wakeup_tick;
+
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -113,6 +116,10 @@ struct thread {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
+//alarm-clock 관련 함수 추가
+void thread_sleep(int64_t ticks);
+void thread_wakeup();
 
 void thread_init (void);
 void thread_start (void);

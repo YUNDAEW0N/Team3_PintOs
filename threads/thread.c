@@ -13,6 +13,7 @@
 #include "intrinsic.h"
 #ifdef USERPROG
 #include "userprog/process.h"
+#include "thread.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -27,6 +28,9 @@
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
+
+//sleep_list 추가
+static struct list sleep_list;
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -92,9 +96,54 @@ static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
 
    It is not safe to call thread_current() until this function
    finishes. */
-void
-thread_init (void) {
-	ASSERT (intr_get_level () == INTR_OFF);
+
+void thread_sleep(int64_t ticks)
+{
+	struct thread *curr = thread_current();
+	enum intr_level old_level;
+	
+
+	if (curr != idle_thread){
+		old_level = intr_disable();
+		curr->status = THREAD_BLOCKED;
+		curr->wakeup_tick = ticks;
+		list_push_back(&sleep_list, &curr->elem);
+		schedule();
+	}
+	intr_set_level(old_level);
+}
+void thread_wakeup()
+{
+	/*check sleep list and the global tick.
+      find any threads to wake up,
+	  move them to the ready list if necessary.
+	  update the global tick*/
+	enum intr_level old_level;
+	if(list_empty(&sleep_list))
+		return;
+
+	struct list_elem *temp = list_pop_front(&sleep_list);
+	struct thread *t = list_entry(temp,struct thread,elem);
+	
+	old_level=intr_disable();
+	if (timer_elapsed(t->wakeup_tick) > 0)
+	{
+		t->status = THREAD_READY;
+		list_push_back(&ready_list, &t->elem);
+		printf("thread %d wake up at %lld\n", t->tid, timer_ticks());
+		// schedule();
+		intr_set_level(old_level);
+	}
+	else
+	{
+		list_push_back(&sleep_list, &t->elem);
+		intr_set_level(old_level);
+	}
+
+}
+thread_init(void)
+{
+    ASSERT (intr_get_level () == INTR_OFF);
 
 	/* Reload the temporal gdt for the kernel
 	 * This gdt does not include the user context.
@@ -108,6 +157,7 @@ thread_init (void) {
 	/* Init the globla thread context */
 	lock_init (&tid_lock);
 	list_init (&ready_list);
+	list_init (&sleep_list);
 	list_init (&destruction_req);
 
 	/* Set up a thread structure for the running thread. */
