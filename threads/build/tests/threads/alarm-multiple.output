@@ -4,7 +4,7 @@ Kernel command line: -q run alarm-multiple
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  61,747,200 loops/s.
+Calibrating timer...  144,793,600 loops/s.
 Boot complete.
 Executing 'alarm-multiple':
 (alarm-multiple) begin
@@ -13,42 +13,6 @@ Executing 'alarm-multiple':
 (alarm-multiple) thread 1 sleeps 20 ticks each time, and so on.
 (alarm-multiple) If successful, product of iteration count and
 (alarm-multiple) sleep duration will appear in nondescending order.
-thread 3 wake up at 149
-thread 3 wake up at 155
-thread 4 wake up at 156
-thread 3 wake up at 167
-thread 5 wake up at 169
-thread 4 wake up at 174
-thread 6 wake up at 176
-thread 3 wake up at 179
-thread 3 wake up at 185
-thread 7 wake up at 189
-thread 3 wake up at 197
-thread 4 wake up at 198
-thread 5 wake up at 199
-thread 3 wake up at 209
-thread 4 wake up at 215
-thread 6 wake up at 217
-thread 5 wake up at 226
-thread 4 wake up at 235
-thread 7 wake up at 238
-thread 4 wake up at 255
-thread 5 wake up at 256
-thread 6 wake up at 257
-thread 4 wake up at 275
-thread 5 wake up at 284
-thread 7 wake up at 286
-thread 6 wake up at 297
-thread 5 wake up at 316
-thread 7 wake up at 334
-thread 6 wake up at 337
-thread 5 wake up at 344
-thread 6 wake up at 375
-thread 7 wake up at 385
-thread 6 wake up at 414
-thread 7 wake up at 435
-thread 7 wake up at 485
-thread 1 wake up at 584
 (alarm-multiple) thread 0: duration=10, iteration=1, product=10
 (alarm-multiple) thread 0: duration=10, iteration=2, product=20
 (alarm-multiple) thread 1: duration=20, iteration=1, product=20
@@ -86,8 +50,8 @@ thread 1 wake up at 584
 (alarm-multiple) thread 4: duration=50, iteration=7, product=350
 (alarm-multiple) end
 Execution of 'alarm-multiple' complete.
-Timer: 636 ticks
-Thread: 551 idle ticks, 86 kernel ticks, 0 user ticks
-Console: 3858 characters output
+Timer: 595 ticks
+Thread: 551 idle ticks, 45 kernel ticks, 0 user ticks
+Console: 2995 characters output
 Keyboard: 0 keys pressed
 Powering off...

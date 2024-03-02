@@ -200,7 +200,7 @@ list_push_front (struct list *list, struct list_elem *elem) {
    back in LIST. */
 void
 list_push_back (struct list *list, struct list_elem *elem) {
-	list_insert (list_end (list), elem);
+	list_insert (list__end (list), elem);
 }
 
 /* Removes ELEM from its list and returns the element that
