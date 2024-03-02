@@ -114,10 +114,7 @@ void thread_sleep(int64_t ticks)
 }
 void thread_wakeup()
 {
-	/*check sleep list and the global tick.
-      find any threads to wake up,
-	  move them to the ready list if necessary.
-	  update the global tick*/
+
 	enum intr_level old_level;
 	if(list_empty(&sleep_list))
 		return;
@@ -130,8 +127,6 @@ void thread_wakeup()
 	{
 		t->status = THREAD_READY;
 		list_push_back(&ready_list, &t->elem);
-		printf("thread %d wake up at %lld\n", t->tid, timer_ticks());
-		// schedule();
 		intr_set_level(old_level);
 	}
 	else
@@ -139,7 +134,6 @@ void thread_wakeup()
 		list_push_back(&sleep_list, &t->elem);
 		intr_set_level(old_level);
 	}
-
 }
 thread_init(void)
 {
