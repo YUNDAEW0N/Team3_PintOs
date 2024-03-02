@@ -29,11 +29,12 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 
+static struct list sleep_list;	// Define sleep Queue.
+
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
    corresponding interrupt. */
-void
-timer_init (void) {
+void timer_init (void) {
 	/* 8254 input frequency divided by TIMER_FREQ, rounded to
 	   nearest. */
 	uint16_t count = (1193180 + TIMER_FREQ / 2) / TIMER_FREQ;
@@ -46,8 +47,7 @@ timer_init (void) {
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
-void
-timer_calibrate (void) {
+void timer_calibrate (void) {
 	unsigned high_bit, test_bit;
 
 	ASSERT (intr_get_level () == INTR_ON);
@@ -71,8 +71,7 @@ timer_calibrate (void) {
 }
 
 /* Returns the number of timer ticks since the OS booted. */
-int64_t
-timer_ticks (void) {
+int64_t timer_ticks (void) {
 	enum intr_level old_level = intr_disable ();
 	int64_t t = ticks;
 	intr_set_level (old_level);
@@ -82,50 +81,51 @@ timer_ticks (void) {
 
 /* Returns the number of timer ticks elapsed since THEN, which
    should be a value once returned by timer_ticks(). */
-int64_t
-timer_elapsed (int64_t then) {
+int64_t timer_elapsed (int64_t then) {
 	return timer_ticks () - then;
 }
 
 /* Suspends execution for approximately TICKS timer ticks. */
-void
-timer_sleep (int64_t ticks) {
+void timer_sleep (int64_t ticks) {
 	int64_t start = timer_ticks ();
 
 	ASSERT (intr_get_level () == INTR_ON);
-	while (timer_elapsed (start) < ticks)
-		thread_yield ();
+	// while (timer_elapsed (start) < ticks)
+	// 	thread_yield ();
+
+	if(timer_elapsed(start) < ticks)
+	thread_sleep(start + ticks); // implement by yourself << start is invalid here. how to fix it?
 }
 
 /* Suspends execution for approximately MS milliseconds. */
-void
-timer_msleep (int64_t ms) {
+void timer_msleep (int64_t ms) {
 	real_time_sleep (ms, 1000);
 }
 
 /* Suspends execution for approximately US microseconds. */
-void
-timer_usleep (int64_t us) {
+void timer_usleep (int64_t us) {
 	real_time_sleep (us, 1000 * 1000);
 }
 
 /* Suspends execution for approximately NS nanoseconds. */
-void
-timer_nsleep (int64_t ns) {
+void timer_nsleep (int64_t ns) {
 	real_time_sleep (ns, 1000 * 1000 * 1000);
 }
 
 /* Prints timer statistics. */
-void
-timer_print_stats (void) {
+void timer_print_stats (void) {
 	printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
 /* Timer interrupt handler. */
-static void
-timer_interrupt (struct intr_frame *args UNUSED) {
+static void timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
-	thread_tick ();
+	thread_tick (); // update the cpu usage for running process
+
+	/* code to add:
+	check sleep list and the global tick.
+	find any thread to wake up, move them to the ready list if necessary.
+	update the global tick. */
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
@@ -153,8 +153,7 @@ too_many_loops (unsigned loops) {
    affect timings, so that if this function was inlined
    differently in different places the results would be difficult
    to predict. */
-static void NO_INLINE
-busy_wait (int64_t loops) {
+static void NO_INLINE busy_wait (int64_t loops) {
 	while (loops-- > 0)
 		barrier ();
 }

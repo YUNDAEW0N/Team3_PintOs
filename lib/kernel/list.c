@@ -35,27 +35,23 @@ static bool is_sorted (struct list_elem *a, struct list_elem *b,
 		list_less_func *less, void *aux) UNUSED;
 
 /* Returns true if ELEM is a head, false otherwise. */
-static inline bool
-is_head (struct list_elem *elem) {
+static inline bool is_head (struct list_elem *elem) {
 	return elem != NULL && elem->prev == NULL && elem->next != NULL;
 }
 
 /* Returns true if ELEM is an interior element,
    false otherwise. */
-static inline bool
-is_interior (struct list_elem *elem) {
+static inline bool is_interior (struct list_elem *elem) {
 	return elem != NULL && elem->prev != NULL && elem->next != NULL;
 }
 
 /* Returns true if ELEM is a tail, false otherwise. */
-static inline bool
-is_tail (struct list_elem *elem) {
+static inline bool is_tail (struct list_elem *elem) {
 	return elem != NULL && elem->prev != NULL && elem->next == NULL;
 }
 
 /* Initializes LIST as an empty list. */
-void
-list_init (struct list *list) {
+void list_init (struct list *list) {
 	ASSERT (list != NULL);
 	list->head.prev = NULL;
 	list->head.next = &list->tail;
@@ -64,8 +60,7 @@ list_init (struct list *list) {
 }
 
 /* Returns the beginning of LIST.  */
-struct list_elem *
-list_begin (struct list *list) {
+struct list_elem * list_begin (struct list *list) {
 	ASSERT (list != NULL);
 	return list->head.next;
 }
@@ -167,8 +162,7 @@ list_insert (struct list_elem *before, struct list_elem *elem) {
 /* Removes elements FIRST though LAST (exclusive) from their
    current list, then inserts them just before BEFORE, which may
    be either an interior element or a tail. */
-void
-list_splice (struct list_elem *before,
+void list_splice (struct list_elem *before,
 		struct list_elem *first, struct list_elem *last) {
 	ASSERT (is_interior (before) || is_tail (before));
 	if (first == last)
@@ -191,15 +185,14 @@ list_splice (struct list_elem *before,
 
 /* Inserts ELEM at the beginning of LIST, so that it becomes the
    front in LIST. */
-void
-list_push_front (struct list *list, struct list_elem *elem) {
+void list_push_front (struct list *list, struct list_elem *elem) {
 	list_insert (list_begin (list), elem);
 }
 
 /* Inserts ELEM at the end of LIST, so that it becomes the
    back in LIST. */
-void
-list_push_back (struct list *list, struct list_elem *elem) {
+   /* 주어진 엔트리 리스트의 끝에 삽입한다. */
+void list_push_back (struct list *list, struct list_elem *elem) {
 	list_insert (list_end (list), elem);
 }
 

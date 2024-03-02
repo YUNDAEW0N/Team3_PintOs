@@ -111,8 +111,7 @@ static void pic_end_of_interrupt (int irq);
 void intr_handler (struct intr_frame *args);
 
 /* Returns the current interrupt status. */
-enum intr_level
-intr_get_level (void) {
+enum intr_level intr_get_level (void) {
 	uint64_t flags;
 
 	/* Push the flags register on the processor stack, then pop the
@@ -126,14 +125,13 @@ intr_get_level (void) {
 
 /* Enables or disables interrupts as specified by LEVEL and
    returns the previous interrupt status. */
-enum intr_level
-intr_set_level (enum intr_level level) {
+   /* 지정된 level에 따라 인터럽트를 활성화하거나 비활성화하고, 이전의 인터럽트 상태를 반환한다. */
+enum intr_level intr_set_level (enum intr_level level) {
 	return level == INTR_ON ? intr_enable () : intr_disable ();
 }
 
 /* Enables interrupts and returns the previous interrupt status. */
-enum intr_level
-intr_enable (void) {
+enum intr_level intr_enable (void) {
 	enum intr_level old_level = intr_get_level ();
 	ASSERT (!intr_context ());
 
@@ -147,8 +145,8 @@ intr_enable (void) {
 }
 
 /* Disables interrupts and returns the previous interrupt status. */
-enum intr_level
-intr_disable (void) {
+/* interrupts를 금지하고 이전 interrupt 상태를 반환한다. */
+enum intr_level intr_disable (void) {
 	enum intr_level old_level = intr_get_level ();
 
 	/* Disable interrupts by clearing the interrupt flag.

@@ -4,8 +4,9 @@
 #include <round.h>
 #include <stdint.h>
 
+// 기본적으로 초당 100회 작동하는 시스템 타이머
 /* Number of timer interrupts per second. */
-#define TIMER_FREQ 100
+#define TIMER_FREQ 100              
 
 void timer_init (void);
 void timer_calibrate (void);

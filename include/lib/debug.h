@@ -27,6 +27,7 @@ void debug_backtrace (void);
 #undef NOT_REACHED
 
 #ifndef NDEBUG
+/* 디버깅 모드에서 개발자가 오류가 생기면 치명적일 것이라는 곳에 심어 놓는 에러 검출용 코드 */
 #define ASSERT(CONDITION)                                       \
 	if ((CONDITION)) { } else {                             \
 		PANIC ("assertion `%s' failed.", #CONDITION);   \
