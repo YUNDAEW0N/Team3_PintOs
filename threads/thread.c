@@ -315,6 +315,7 @@ void thread_unblock (struct thread *t) {
 	ASSERT (t->status == THREAD_BLOCKED);
 	// todo list_push_back -> list_insert_ordered 방식으로 변경(priority기준)
 	list_push_back (&ready_list, &t->elem);
+
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 }
@@ -323,23 +324,25 @@ void thread_unblock (struct thread *t) {
 void thread_wakeup(int64_t ticks){
 	enum intr_level old_level;
 	struct list_elem *e = list_begin(&sleep_list);
-	// while(e != list_end(&sleep_list)){
-	// 	struct thread *t = list_entry(e,struct thread, elem);
+	while(e != list_end(&sleep_list)){
+		struct thread *t = list_entry(e,struct thread,elem);
+		//printf(" t.name = %s , t.status = %d, blocked = %d \n",t->name,t->status,THREAD_BLOCKED);
+		if(ticks >= t->wakeup_tick){
+			e = list_remove(e);
+			thread_unblock(t);
+		}
+		else{
+			e = list_next(e);
+		}
+	}
+	// for (e;e != list_end(&sleep_list);e = list_next(e)){
+	// 	struct thread *t = list_entry(e, struct thread, elem);
 	// 	if(ticks >= t->wakeup_tick){
 	// 		e = list_remove(e);
 	// 		thread_unblock(t);
-	// 	}else{
-	// 		e = list_next(e);
 	// 	}
 	// }
-
-	for (e;e != list_end(&sleep_list);e = list_next(e)){
-		struct thread *t = list_entry(e,struct thread, elem);
-		if(ticks >= t->wakeup_tick){
-			list_remove(e);
-			thread_unblock(t);
-		}
-	}
+	
 }
 
 /* Returns the name of the running thread. */
