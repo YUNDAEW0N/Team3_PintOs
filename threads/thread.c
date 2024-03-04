@@ -246,6 +246,7 @@ tid_t thread_create (const char *name, int priority,
 	thread_func *function, void *aux) {
 	struct thread *t;
 	tid_t tid;
+	// struct thread *curr_t = thread_current();
 
 	ASSERT (function != NULL);
 
@@ -273,9 +274,13 @@ tid_t thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
+	// if (t->priority > curr_t->priority){
+	// 	thread_yield();
+	// } else {
 	/* Add to run queue. */
 	/* 실행 큐에 추가 */
 	thread_unblock (t);
+	// }
 
 	return tid;
 }
@@ -425,6 +430,8 @@ void thread_yield (void) {
 	old_level = intr_disable ();				// disable interrupt
 	if (curr != idle_thread)
 		list_push_back (&ready_list, &curr->elem);	// ready_list의 뒤로 넣기
+		// list_insert_ordered(&ready_list, &curr->elem, 
+						// less_func, NULL);
 	do_schedule (THREAD_READY);						// change thread status and scheduling
 	intr_set_level (old_level);
 }
