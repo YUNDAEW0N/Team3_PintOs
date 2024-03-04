@@ -386,7 +386,14 @@ void
 thread_set_priority (int new_priority) {
 	thread_current ()->priority = new_priority;
 	/*ready_list sort 하면 됨 ( priority 기준으로)*/
-	list_sort(&ready_list,compare_priority,NULL);
+	// list_sort(&ready_list,compare_priority,NULL);
+	enum intr_level old_level;
+	struct thread *curr = thread_current();
+	old_level = intr_disable();
+	list_insert_ordered(&ready_list,&curr->elem,
+						compare_priority,NULL);
+	do_schedule(THREAD_READY);
+	intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
