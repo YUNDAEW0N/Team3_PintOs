@@ -29,8 +29,6 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 
-static struct list sleep_list;	// Define sleep Queue.
-
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
    corresponding interrupt. */
@@ -81,20 +79,25 @@ int64_t timer_ticks (void) {
 
 /* Returns the number of timer ticks elapsed since THEN, which
    should be a value once returned by timer_ticks(). */
+/* THEN 이후 경과한 타이머 틱의 수를 반환합니다.
+이 값은 이전에 timer_ticks()가 반환한 값이어야 합니다. */
 int64_t timer_elapsed (int64_t then) {
 	return timer_ticks () - then;
 }
 
 /* Suspends execution for approximately TICKS timer ticks. */
+/* 실행을 대략적으로 TICKS 타이머 틱동안 중단합니다. */
 void timer_sleep (int64_t ticks) {
+	// Call the function that insert thread to the sleep queue.
 	int64_t start = timer_ticks ();
 
 	ASSERT (intr_get_level () == INTR_ON);
 	// while (timer_elapsed (start) < ticks)
 	// 	thread_yield ();
 
-	if(timer_elapsed(start) < ticks)
-	thread_sleep(start + ticks); // implement by yourself << start is invalid here. how to fix it?
+	if(timer_elapsed(start) < ticks){
+		thread_sleep(start + ticks); // implement by yourself << start is invalid here. how to fix it?
+	}
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -117,7 +120,10 @@ void timer_print_stats (void) {
 	printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
-/* Timer interrupt handler. */
+
+/* Timer interrupt handler. 
+At every tick, check whether some thread must wake up from sleep queue and
+call wake up function */
 static void timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick (); // update the cpu usage for running process
@@ -126,12 +132,13 @@ static void timer_interrupt (struct intr_frame *args UNUSED) {
 	check sleep list and the global tick.
 	find any thread to wake up, move them to the ready list if necessary.
 	update the global tick. */
+	thread_wakeup(ticks);
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
-static bool
-too_many_loops (unsigned loops) {
+static bool too_many_loops (unsigned loops) {
 	/* Wait for a timer tick. */
 	int64_t start = ticks;
 	while (ticks == start)
@@ -159,8 +166,7 @@ static void NO_INLINE busy_wait (int64_t loops) {
 }
 
 /* Sleep for approximately NUM/DENOM seconds. */
-static void
-real_time_sleep (int64_t num, int32_t denom) {
+static void real_time_sleep (int64_t num, int32_t denom) {
 	/* Convert NUM/DENOM seconds into timer ticks, rounding down.
 
 	   (NUM / DENOM) s
@@ -183,3 +189,15 @@ real_time_sleep (int64_t num, int32_t denom) {
 		busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000));
 	}
 }
+
+// /* Function that save minimum value of tick that thread have */
+// struct list_elem renew_min_tick (){
+// 	struct list_elem min = struct list_elem *list_min (&sleep_list, list_less_func *, void *aux);
+// 	return min;
+// }
+
+// /* Function that return the minimum value of tick */
+// struct list_elem get_min_tick (){
+// 	struct list_elem min = struct list_elem *list_min (struct list *, list_less_func *, void *aux);
+// 	return min;
+// }
