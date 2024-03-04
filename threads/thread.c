@@ -323,23 +323,23 @@ void thread_unblock (struct thread *t) {
 void thread_wakeup(int64_t ticks){
 	enum intr_level old_level;
 	struct list_elem *e = list_begin(&sleep_list);
-	while(e != list_end(&sleep_list)){
+	// while(e != list_end(&sleep_list)){
+	// 	struct thread *t = list_entry(e,struct thread, elem);
+	// 	if(ticks >= t->wakeup_tick){
+	// 		e = list_remove(e);
+	// 		thread_unblock(t);
+	// 	}else{
+	// 		e = list_next(e);
+	// 	}
+	// }
+
+	for (e;e != list_end(&sleep_list);e = list_next(e)){
 		struct thread *t = list_entry(e,struct thread, elem);
 		if(ticks >= t->wakeup_tick){
-			e = list_remove(e);
+			list_remove(e);
 			thread_unblock(t);
-		}else{
-			e = list_next(e);
 		}
 	}
-
-// 	for (e;e != list_end(&sleep_list);e = list_next(e)){
-// 		struct thread *t = list_entry(e,struct thread, elem);
-// 		if(ticks >= t->wakeup_tick){
-// 			list_remove(e);
-// 			thread_unblock(t);
-// 		}
-// 	}
 }
 
 /* Returns the name of the running thread. */
@@ -351,7 +351,7 @@ const char * thread_name (void) {
 /* Returns the running thread.
    This is running_thread() plus a couple of sanity checks.
    See the big comment at the top of thread.h for details. */
-/* 실행 중인 스레드를 반환합니다.
+/* 실행 중인 스레드를 반환합니다.`
    이는 running_thread()에 몇 가지 안전 검사를 추가한 것입니다.
    자세한 내용은 thread.h의 맨 위의 큰 주석을 참조하세요. */
 
