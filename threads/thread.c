@@ -23,6 +23,12 @@
    thread.h의 맨 위의 큰 주석을 참조하세요. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+bool less_func(const struct list_elem *a, const struct list_elem *b, void *aux) {
+    struct thread *data_a = list_entry(a, struct thread, elem);
+    struct thread *data_b = list_entry(b, struct thread, elem);
+    return data_a->priority > data_b->priority;
+}
+
 /* Random value for basic thread
    Do not modify this value. */
 /* 기본 스레드를 위한 랜덤 값
@@ -273,6 +279,8 @@ tid_t thread_create (const char *name, int priority,
 
 	return tid;
 }
+// 러닝쓰레드가 돌아가는 상태에서, 새로운 쓰레드가 만들어질때
+// 현재 쓰레드가 새로 만들어지는 쓰레드보다 우선순위가 낮을 때 우선순위가 높은 애가 먼저 실행이 돼야함, 현재 쓰레드는 중단. yield
 
 /* Puts the current thread to sleep.  It will not be scheduled
    again until awoken by thread_unblock().
@@ -314,7 +322,9 @@ void thread_unblock (struct thread *t) {
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
 	// todo list_push_back -> list_insert_ordered 방식으로 변경(priority기준)
-	list_push_back (&ready_list, &t->elem);
+	// list_push_back (&ready_list, &t->elem);
+	list_insert_ordered(&ready_list, &t->elem, 
+						less_func, NULL);
 
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
