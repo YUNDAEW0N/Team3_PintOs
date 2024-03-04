@@ -115,6 +115,26 @@ void thread_sleep(int64_t ticks)
 
 void thread_wakeup(int64_t ticks)
 {
+	/*priority 고려하기 전 기존 코드
+
+	struct list_elem *temp = list_pop_front(&sleep_list);
+	struct thread *t = list_entry(temp, struct thread, elem);
+
+	old_level = intr_disable();
+	if (timer_elapsed(t->wakeup_tick) > 0)
+	{
+		// t->status = THREAD_READY;
+		// list_push_back(&ready_list, &t->elem);
+		// intr_set_level(old_level);
+		thread_unblock(t);
+	}
+	else
+	{
+		list_push_back(&sleep_list, &t->elem);
+		intr_set_level(old_level);
+	}*/
+
+	/* priority 수정 후 코드 */
 	enum intr_level old_level;
     old_level = intr_disable();
 
@@ -134,19 +154,8 @@ void thread_wakeup(int64_t ticks)
 		}
     }
     intr_set_level(old_level);
-	// if (timer_elapsed(t->wakeup_tick) > 0)
-	// {
-	// 	// t->status = THREAD_READY;
-	// 	// list_push_back(&ready_list, &t->elem);
-	// 	// intr_set_level(old_level);
-	// 	thread_unblock(t);
-	// }
-	// else
-	// {
-	// 	list_push_back(&sleep_list, &t->elem);
-	// 	intr_set_level(old_level);
-	// }
 }
+
 thread_init(void)
 {
     ASSERT (intr_get_level () == INTR_OFF);
