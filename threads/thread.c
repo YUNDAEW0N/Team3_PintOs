@@ -112,28 +112,40 @@ void thread_sleep(int64_t ticks)
 	}
 	intr_set_level(old_level);
 }
-void thread_wakeup()
+
+void thread_wakeup(int64_t ticks)
 {
-
 	enum intr_level old_level;
-	if(list_empty(&sleep_list))
-		return;
+    old_level = intr_disable();
 
-	struct list_elem *temp = list_pop_front(&sleep_list);
-	struct thread *t = list_entry(temp,struct thread,elem);
-	
-	old_level=intr_disable();
-	if (timer_elapsed(t->wakeup_tick) > 0)
-	{
-		t->status = THREAD_READY;
-		list_push_back(&ready_list, &t->elem);
-		intr_set_level(old_level);
-	}
-	else
-	{
-		list_push_back(&sleep_list, &t->elem);
-		intr_set_level(old_level);
-	}
+    struct list_elem *e;
+    for (e = list_begin(&sleep_list); e != list_end(&sleep_list); )
+    {
+        struct thread *t = list_entry(e, struct thread, elem);
+        
+        if (ticks >= t->wakeup_tick)
+        {
+			e = list_remove(e);
+            thread_unblock(t);
+        }
+		else
+		{
+			e = list_next(e);
+		}
+    }
+    intr_set_level(old_level);
+	// if (timer_elapsed(t->wakeup_tick) > 0)
+	// {
+	// 	// t->status = THREAD_READY;
+	// 	// list_push_back(&ready_list, &t->elem);
+	// 	// intr_set_level(old_level);
+	// 	thread_unblock(t);
+	// }
+	// else
+	// {
+	// 	list_push_back(&sleep_list, &t->elem);
+	// 	intr_set_level(old_level);
+	// }
 }
 thread_init(void)
 {
@@ -247,9 +259,15 @@ thread_create (const char *name, int priority,
 	t->tf.ss = SEL_KDSEG;
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
-
+ 
 	/* Add to run queue. */
 	thread_unblock (t);
+
+	/*현재 쓰레드랑 새로 생성된 쓰레드 우선순위 비교해서
+	새로 생성한 쓰레드 우선순위가 더 높으면 현재 쓰레드가 양보*/
+	struct thread *curr = thread_current();
+	if (t->priority > curr->priority)
+		thread_yield();
 
 	return tid;
 }
@@ -284,7 +302,8 @@ thread_unblock (struct thread *t) {
 
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
-	list_push_back (&ready_list, &t->elem);
+	//list_push_back (&ready_list, &t->elem);
+	list_insert_ordered(&ready_list,&t->elem,compare_priority,NULL);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 }
@@ -347,7 +366,8 @@ thread_yield (void) {
 
 	old_level = intr_disable ();
 	if (curr != idle_thread)
-		list_push_back (&ready_list, &curr->elem);
+		//list_push_back (&ready_list, &curr->elem);
+		list_insert_ordered(&ready_list,&curr->elem,compare_priority,NULL);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -356,6 +376,8 @@ thread_yield (void) {
 void
 thread_set_priority (int new_priority) {
 	thread_current ()->priority = new_priority;
+	/*ready_list sort 하면 됨 ( priority 기준으로)*/
+	list_sort(&ready_list,compare_priority,NULL);
 }
 
 /* Returns the current thread's priority. */
@@ -631,4 +653,12 @@ allocate_tid (void) {
 	lock_release (&tid_lock);
 
 	return tid;
+}
+
+bool compare_priority(const struct list_elem *a,const struct list_elem *b,void *aux)
+{
+	struct thread *thread_a= list_entry(a, struct thread, elem);
+	struct thread *thread_b= list_entry(b, struct thread, elem);
+
+	return thread_a->priority > thread_b->priority;
 }
