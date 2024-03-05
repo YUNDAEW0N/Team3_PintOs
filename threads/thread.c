@@ -54,7 +54,7 @@ static struct lock tid_lock;
 /* 스레드 소멸 요청 */
 static struct list destruction_req;
 
-bool less_func(const struct list_elem *a, const struct list_elem *b, void *aux) {
+bool large_func(const struct list_elem *a, const struct list_elem *b, void *aux) {
     struct thread *data_a = list_entry(a, struct thread, elem);
     struct thread *data_b = list_entry(b, struct thread, elem);
     return data_a->priority > data_b->priority;
@@ -328,7 +328,7 @@ void thread_unblock (struct thread *t) {
 	// todo list_push_back -> list_insert_ordered 방식으로 변경(priority기준)
 	// list_push_back (&ready_list, &t->elem);
 	list_insert_ordered(&ready_list, &t->elem, 
-						less_func, NULL);
+						large_func, NULL);
 
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
@@ -431,7 +431,7 @@ void thread_yield (void) {
 	if (curr != idle_thread)
 		// list_push_back (&ready_list, &curr->elem);	// ready_list의 뒤로 넣기
 		list_insert_ordered(&ready_list, &curr->elem, 
-						less_func, NULL);
+						large_func, NULL);
 	do_schedule (THREAD_READY);						// change thread status and scheduling
 	intr_set_level (old_level);
 }
@@ -464,7 +464,17 @@ void thread_sleep(int64_t ticks){
 /* Sets the current thread's priority to NEW_PRIORITY. */
 /* 현재 스레드의 우선 순위를 NEW_PRIORITY로 설정합니다. */
 void thread_set_priority (int new_priority) {
-	thread_current ()->priority = new_priority;
+	struct thread *curr = thread_current();
+	enum intr_level old_level;
+
+	curr->priority = new_priority;	
+	curr->status = THREAD_READY;
+	
+	old_level = intr_disable();
+	list_insert_ordered(&ready_list, &curr->elem, 
+						large_func, NULL);
+	schedule();
+	intr_set_level(old_level);
 }
 
 /* Returns the current thread's priority. */
