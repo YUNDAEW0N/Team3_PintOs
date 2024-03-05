@@ -150,6 +150,13 @@ struct thread {
 	/* tick till wake up */
 	int64_t wakeup_tick;
 
+	/* who is donator? */
+	struct thread* donations;
+
+	/* wait_on_lock */
+	// struct list waitors;
+	
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */

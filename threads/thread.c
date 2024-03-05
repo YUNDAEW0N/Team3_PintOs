@@ -38,6 +38,9 @@ static struct list ready_list;
 /* alarm clock을 만들기 위한 sleep_list */
 static struct list sleep_list;
 
+/* Data structure for donation */
+// static struct list waiters;
+
 /* Idle thread. */
 /* 현재 실행중이지 않은 대기 상태의 쓰레드.(게으른) */
 static struct thread *idle_thread;
@@ -146,7 +149,10 @@ void thread_init (void) {
 	/* Init the global thread context */
 	/* 전역 스레드 컨텍스트 초기화 */
 	lock_init (&tid_lock);
+	
 	list_init (&sleep_list);				// blocked를 사용하기 위한 sleep_list
+	// list_init (&waiters);					// 우선순위 기부를 위한 대기자 리스트
+
 	list_init (&ready_list);
 	list_init (&destruction_req);
 
@@ -338,6 +344,7 @@ void thread_unblock (struct thread *t) {
 void thread_wakeup(int64_t ticks){
 	enum intr_level old_level;
 	struct list_elem *e = list_begin(&sleep_list);
+
 	while(e != list_end(&sleep_list)){
 		struct thread *t = list_entry(e,struct thread,elem);
 		//printf(" t.name = %s , t.status = %d, blocked = %d \n",t->name,t->status,THREAD_BLOCKED);
@@ -455,6 +462,7 @@ void thread_sleep(int64_t ticks){
 	old_level = intr_disable();
 	if (curr != idle_thread){
 		list_push_back(&sleep_list, &curr->elem);
+		// list_push_back(&waiters, &curr->elem);			// waiters for donation
 	}
 	// do_schedule(THREAD_BLOCKED);
 	thread_block();
