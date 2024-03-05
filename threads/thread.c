@@ -462,19 +462,27 @@ void thread_sleep(int64_t ticks){
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
-/* 현재 스레드의 우선 순위를 NEW_PRIORITY로 설정합니다. */
+/* 현재 스레드의 우선 순위를 NEW_PRIORITY로 설정합니다.
+그리고 현재 실행중인 쓰레드의 우선 순위와 비교하여 양보합니다. */
 void thread_set_priority (int new_priority) {
 	struct thread *curr = thread_current();
-	enum intr_level old_level;
 
 	curr->priority = new_priority;	
+	if( new_priority <= list_entry(list_begin(&ready_list),
+								struct thread, elem)->priority){ // list_entry() 공부
+		thread_yield();
+	}
+
+	/*
 	curr->status = THREAD_READY;
-	
+	enum intr_level old_level;
+
 	old_level = intr_disable();
 	list_insert_ordered(&ready_list, &curr->elem, 
 						large_func, NULL);
 	schedule();
 	intr_set_level(old_level);
+	*/
 }
 
 /* Returns the current thread's priority. */

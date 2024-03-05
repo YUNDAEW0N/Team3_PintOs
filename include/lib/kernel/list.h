@@ -172,7 +172,6 @@ struct list {
    LIST_ELEM이 포함된 구조체로의 포인터를 변환합니다.
    OUTER 구조체의 이름과 리스트 요소의 멤버 이름 MEMBER를 제공하세요.
    파일 상단에 있는 큰 주석을 참조하세요. */
-
 #define list_entry(LIST_ELEM, STRUCT, MEMBER)           \
 	((STRUCT *) ((uint8_t *) &(LIST_ELEM)->next     \
 		- offsetof (STRUCT, MEMBER.next)))
