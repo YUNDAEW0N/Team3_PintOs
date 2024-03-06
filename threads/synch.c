@@ -74,9 +74,11 @@ void sema_down (struct semaphore *sema) {
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();		// 인터럽트 제한걸기
-	while (sema->value == 0) {			// sema가 0이라면
-		list_push_back (&sema->waiters, &thread_current ()->elem);		// waiters 리스트에 현재 쓰레드를 넣는다.
-		thread_block ();				// 쓰레드를 블록한다.
+	while (sema->value == 0) {
+		//list_push_back (&sema->waiters, &thread_current ()->elem);
+      
+      list_insert_ordered(&sema->waiters, &thread_current()->elem, list_large_func, NULL);
+		thread_block ();
 	}
 	sema->value--;						
 	intr_set_level (old_level);
@@ -126,10 +128,22 @@ void sema_up (struct semaphore *sema) {
 	ASSERT (sema != NULL);
 
 	old_level = intr_disable ();
+   sema->value++;
+
 	if (!list_empty (&sema->waiters))
+   {
+// 	thread_unblock (list_entry (list_pop_front (&sema->waiters),
+// 				struct thread, elem));
+      list_sort(&sema->waiters,list_large_func,NULL);
+      struct thread *t = list_entry(list_begin(&sema->waiters),struct thread, elem);
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),
-					struct thread, elem));
-	sema->value++;
+					      struct thread, elem)); 
+      
+      if(t->priority > thread_get_priority()){
+         thread_yield();
+      }
+   }
+
 	intr_set_level (old_level);
 }
 
@@ -211,7 +225,6 @@ void lock_init (struct lock *lock) {
    we need to sleep. */
 
 /* LOCK을 획득하여 사용 가능할 때까지 대기합니다. 현재 스레드가 이미 락을 보유하고 있지 않아야 합니다.
-
    이 함수는 sleep할 수 있으므로 인터럽트 핸들러 내에서 호출해서는 안 됩니다.
    이 함수는 인터럽트가 비활성화된 상태에서 호출할 수 있지만, sleep하면 다음에 스케줄된
    스레드가 아마도 다시 인터럽트를 활성화할 것입니다. */
@@ -220,7 +233,6 @@ void lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);							// lock은 유효한가?
 	ASSERT (!intr_context ());						// 인터럽트 핸들러 내에서 호출되지 않았는지
 	ASSERT (!lock_held_by_current_thread (lock));	// 현재 스레드가 이미 해당 락을 보유하고 있는지?
-
 	
 	sema_down (&lock->semaphore);
 	lock->holder = thread_current ();
@@ -286,6 +298,19 @@ struct semaphore_elem {
 	struct semaphore semaphore;         /* This semaphore. */
 };
 
+/* 두 개의 리스트 요소(struct list_elem)를 비교하여 우선 순위가 더 높은 스레드가 있는지 판별합니다.
+ 이 함수는 리스트 소파에 사용되는 비교 함수로서, 리스트의 요소를 정렬하는 데 사용될 수 있습니다.  */
+bool greater_priority_cond (const struct list_elem *a, const struct list_elem *b, void *aux) 
+{
+   struct semaphore_elem *sema_a = list_entry(a, struct semaphore_elem,elem);
+   struct semaphore_elem *sema_b = list_entry(b, struct semaphore_elem,elem);
+   struct list_elem *elem_a = list_begin(&sema_a->semaphore.waiters);
+   struct list_elem *elem_b = list_begin(&sema_b->semaphore.waiters);
+   struct thread *thread_a = list_entry(elem_a, struct thread, elem);
+   struct thread *thread_b = list_entry(elem_b, struct thread, elem);
+   return thread_a->priority > thread_b->priority;
+};
+
 /* Initializes condition variable COND.  A condition variable
    allows one piece of code to signal a condition and cooperating
    code to receive the signal and act upon it. */
@@ -343,7 +368,9 @@ void cond_wait (struct condition *cond, struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	sema_init (&waiter.semaphore, 0);
-	list_push_back (&cond->waiters, &waiter.elem);
+   list_insert_ordered(&cond->waiters,&waiter.elem,
+		               greater_priority_cond,NULL); 
+	// list_push_back (&cond->waiters, &waiter.elem);
 	lock_release (lock);
 	sema_down (&waiter.semaphore);
 	lock_acquire (lock);
@@ -370,9 +397,17 @@ void cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (!intr_context ());
 	ASSERT (lock_held_by_current_thread (lock));
 
-	if (!list_empty (&cond->waiters))
+	if (!list_empty (&cond->waiters)){
+      // struct thread *t = list_entry(list_begin(&list_entry(list_begin(&cond->waiters),
+      // struct semaphore_elem,elem)->semaphore.waiters)
+      // ,struct thread,elem);
+      list_sort(&cond->waiters, greater_priority_cond, NULL);
 		sema_up (&list_entry (list_pop_front (&cond->waiters),
 					struct semaphore_elem, elem)->semaphore);
+      // if(t->priority > thread_get_priority()){
+      //    thread_yield();
+      // }
+   }
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by

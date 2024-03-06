@@ -1,5 +1,6 @@
 #include "list.h"
 #include "../debug.h"
+#include "threads/thread.h"
 
 /* Our doubly linked lists have two header elements: the "head"
    just before the first element and the "tail" just after the
@@ -172,6 +173,7 @@ void list_insert (struct list_elem *before, struct list_elem *elem) {
 	elem->next = before;
 	before->prev->next = elem;
 	before->prev = elem;
+
 }
 
 /* Removes elements FIRST though LAST (exclusive) from their

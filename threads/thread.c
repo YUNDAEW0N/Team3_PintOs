@@ -38,9 +38,6 @@ static struct list ready_list;
 /* alarm clock을 만들기 위한 sleep_list */
 static struct list sleep_list;
 
-/* Data structure for donation */
-// static struct list waiters;
-
 /* Idle thread. */
 /* 현재 실행중이지 않은 대기 상태의 쓰레드.(게으른) */
 static struct thread *idle_thread;
@@ -56,12 +53,6 @@ static struct lock tid_lock;
 /* Thread destruction requests */
 /* 스레드 소멸 요청 */
 static struct list destruction_req;
-
-bool large_func(const struct list_elem *a, const struct list_elem *b, void *aux) {
-    struct thread *data_a = list_entry(a, struct thread, elem);
-    struct thread *data_b = list_entry(b, struct thread, elem);
-    return data_a->priority > data_b->priority;
-}
 
 /* Statistics. */
 /* 통계 */
@@ -151,7 +142,6 @@ void thread_init (void) {
 	lock_init (&tid_lock);
 	
 	list_init (&sleep_list);				// blocked를 사용하기 위한 sleep_list
-	// list_init (&waiters);					// 우선순위 기부를 위한 대기자 리스트
 
 	list_init (&ready_list);
 	list_init (&destruction_req);
@@ -318,7 +308,8 @@ void thread_block (void) {
    be important: if the caller had disabled interrupts itself,
    it may expect that it can atomically unblock a thread and
    update other data. */
-   /* 블록된 스레드 T를 실행 준비 상태로 전환합니다.
+
+/* 블록된 스레드 T를 실행 준비 상태로 전환합니다.
    T가 블록되지 않은 경우 오류입니다. (스레드를 실행 가능하게 하려면 thread_yield()를 사용하세요.)
 
    이 함수는 실행 중인 스레드를 선점하지 않습니다.
@@ -334,7 +325,7 @@ void thread_unblock (struct thread *t) {
 	// todo list_push_back -> list_insert_ordered 방식으로 변경(priority기준)
 	// list_push_back (&ready_list, &t->elem);
 	list_insert_ordered(&ready_list, &t->elem, 
-						large_func, NULL);
+						list_large_func, NULL);
 
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
@@ -342,7 +333,7 @@ void thread_unblock (struct thread *t) {
 
 /* 슬립 큐에서 깨울 쓰레드를 찾아 깨우는 함수 */
 void thread_wakeup(int64_t ticks){
-	enum intr_level old_level;
+	// enum intr_level old_level;
 	struct list_elem *e = list_begin(&sleep_list);
 
 	while(e != list_end(&sleep_list)){
@@ -438,7 +429,7 @@ void thread_yield (void) {
 	if (curr != idle_thread)
 		// list_push_back (&ready_list, &curr->elem);	// ready_list의 뒤로 넣기
 		list_insert_ordered(&ready_list, &curr->elem, 
-						large_func, NULL);
+						list_large_func, NULL);
 	do_schedule (THREAD_READY);						// change thread status and scheduling
 	intr_set_level (old_level);
 }
@@ -462,7 +453,6 @@ void thread_sleep(int64_t ticks){
 	old_level = intr_disable();
 	if (curr != idle_thread){
 		list_push_back(&sleep_list, &curr->elem);
-		// list_push_back(&waiters, &curr->elem);			// waiters for donation
 	}
 	// do_schedule(THREAD_BLOCKED);
 	thread_block();
@@ -487,7 +477,7 @@ void thread_set_priority (int new_priority) {
 
 	old_level = intr_disable();
 	list_insert_ordered(&ready_list, &curr->elem, 
-						large_func, NULL);
+						list_large_func, NULL);
 	schedule();
 	intr_set_level(old_level);
 	*/

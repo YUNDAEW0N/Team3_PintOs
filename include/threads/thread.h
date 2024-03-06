@@ -154,7 +154,7 @@ struct thread {
 	struct thread* donations;
 
 	/* wait_on_lock */
-	// struct list waitors;
+	struct list waitors;
 	
 
 #ifdef USERPROG
@@ -209,3 +209,9 @@ int thread_get_load_avg (void);
 void do_iret (struct intr_frame *tf);
 
 #endif /* threads/thread.h */
+
+static bool list_large_func(const struct list_elem *a, const struct list_elem *b, void *aux) {
+    struct thread *data_a = list_entry(a, struct thread, elem);
+    struct thread *data_b = list_entry(b, struct thread, elem);
+    return data_a->priority > data_b->priority;
+}
