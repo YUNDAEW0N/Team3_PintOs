@@ -47,7 +47,6 @@ test_priority_donate_one (void)
 static void
 acquire1_thread_func (void *lock_) 
 {
-  msg ("acquire1_thread_func");
   struct lock *lock = lock_;
 
   lock_acquire (lock);

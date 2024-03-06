@@ -391,8 +391,9 @@ thread_set_priority (int new_priority) {
 	struct thread *curr = thread_current();
 	old_level = intr_disable();
 	curr->origin_priority=new_priority;
+	donate_set_priority(curr);
 	list_insert_ordered(&ready_list,&curr->elem,
-						compare_priority,NULL);
+						compare_priority_set,NULL);
 	do_schedule(THREAD_READY);
 	intr_set_level(old_level);
 }
@@ -682,6 +683,14 @@ bool compare_priority(const struct list_elem *a,const struct list_elem *b,void *
 	struct thread *thread_b= list_entry(b, struct thread, elem);
 
 	return thread_a->priority > thread_b->priority;
+}
+
+bool compare_priority_set(const struct list_elem *a,const struct list_elem *b,void *aux)
+{
+	struct thread *thread_a= list_entry(a, struct thread, elem);
+	struct thread *thread_b= list_entry(b, struct thread, elem);
+
+	return thread_a->origin_priority > thread_b->origin_priority;
 }
 
 void
