@@ -98,6 +98,12 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
+	/*donation 관련*/
+	struct list donations;
+	struct list_elem d_elem;
+	struct lock *wait_on_lock;
+	int origin_priority;
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -122,6 +128,7 @@ void thread_sleep(int64_t ticks);
 void thread_wakeup();
 
 bool compare_priority(const struct list_elem *a,const struct list_elem *b,void *aux);
+void donate_set_priority(struct thread *new);
 
 void thread_init (void);
 void thread_start (void);

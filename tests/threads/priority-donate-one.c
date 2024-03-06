@@ -30,7 +30,9 @@ test_priority_donate_one (void)
   ASSERT (thread_get_priority () == PRI_DEFAULT);
 
   lock_init (&lock);
+  //msg ("lock_acquire before");
   lock_acquire (&lock);
+  //msg ("lock_acquire after");
   thread_create ("acquire1", PRI_DEFAULT + 1, acquire1_thread_func, &lock);
   msg ("This thread should have priority %d.  Actual priority: %d.",
        PRI_DEFAULT + 1, thread_get_priority ());
@@ -45,6 +47,7 @@ test_priority_donate_one (void)
 static void
 acquire1_thread_func (void *lock_) 
 {
+  msg ("acquire1_thread_func");
   struct lock *lock = lock_;
 
   lock_acquire (lock);

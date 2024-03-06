@@ -9,14 +9,13 @@ struct semaphore {
 	unsigned value;             /* Current value. */
 	struct list waiters;        /* List of waiting threads. */
 };
-
 void sema_init (struct semaphore *, unsigned value);
 void sema_down (struct semaphore *);
 bool sema_try_down (struct semaphore *);
 void sema_up (struct semaphore *);
 void sema_self_test (void);
 bool cond_compare_priority(const struct list_elem *a,const struct list_elem *b,void *aux);
-
+bool compare_priority_2(const struct list_elem *a,const struct list_elem *b,void *aux);
 /* Lock. */
 struct lock {
 	struct thread *holder;      /* Thread holding lock (for debugging). */

@@ -384,12 +384,13 @@ thread_yield (void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) {
-	thread_current ()->priority = new_priority;
+	// thread_current ()->origin_priority = new_priority;
 	/*ready_list sort 하면 됨 ( priority 기준으로)*/
 	// list_sort(&ready_list,compare_priority,NULL);
 	enum intr_level old_level;
 	struct thread *curr = thread_current();
 	old_level = intr_disable();
+	curr->origin_priority=new_priority;
 	list_insert_ordered(&ready_list,&curr->elem,
 						compare_priority,NULL);
 	do_schedule(THREAD_READY);
@@ -490,7 +491,11 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
+	t->origin_priority = priority;
 	t->magic = THREAD_MAGIC;
+
+	list_init(&t->donations);
+	t->wait_on_lock = NULL;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -677,4 +682,32 @@ bool compare_priority(const struct list_elem *a,const struct list_elem *b,void *
 	struct thread *thread_b= list_entry(b, struct thread, elem);
 
 	return thread_a->priority > thread_b->priority;
+}
+
+void
+donate_set_priority(struct thread *new){
+
+	enum intr_level old_level = intr_disable();
+	new->priority = new->origin_priority;
+	struct list_elem *e;
+	int big_pri = -1;
+	//donation에 따라 priority set.
+	
+	if(!list_empty(&new->donations)){
+		for(e = list_front(&new->donations); e != list_end(&new->donations);)
+		{
+
+				if(list_entry(e, struct thread, d_elem)->priority > big_pri){
+					big_pri = list_entry(e, struct thread, d_elem)->priority;
+					}
+				else{
+					e = list_next(e);
+			}
+			}
+	}
+	if(big_pri != -1){
+		new->priority = big_pri;
+	}
+	intr_set_level (old_level);
+
 }
