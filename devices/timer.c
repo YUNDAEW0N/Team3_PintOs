@@ -128,8 +128,21 @@ timer_print_stats (void) {
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
-	thread_wakeup(ticks);
 	thread_tick ();
+
+	if (thread_mlfqs)
+	{
+		increment_recent_cpu();
+		if (ticks % 4==0){
+			recalculate_priority();
+			if (ticks % TIMER_FREQ == 0){
+				recalculate_recent_cpu();
+				calculate_load_avg();
+			}
+		}
+	}
+
+	thread_wakeup(ticks);
 	
 	 
 }

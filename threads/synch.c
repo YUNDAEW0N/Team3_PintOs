@@ -209,6 +209,14 @@ lock_init (struct lock *lock) {
    we need to sleep. */
 void
 lock_acquire (struct lock *lock) {
+
+	if (thread_mlfqs)
+	{
+		sema_down(&lock->semaphore);
+		lock->holder = thread_current();
+		return;
+	}
+
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
@@ -219,7 +227,6 @@ lock_acquire (struct lock *lock) {
 		/*도네이션 함수를 호출해서 도네이션 해준다.*/
 		thread_donate_priority(thread_current(),0);
 	}
-	// //thread_current()->wait_on_lock=NULL;
 
 	sema_down (&lock->semaphore);
 	lock->holder = thread_current ();
@@ -252,6 +259,7 @@ lock_try_acquire (struct lock *lock) {
    handler. */
 void
 lock_release (struct lock *lock) {
+	
 	// ASSERT (lock != NULL);
 	// ASSERT (lock_held_by_current_thread (lock));
 	// struct list_elem *e;
@@ -274,6 +282,13 @@ lock_release (struct lock *lock) {
 /*------------------------------------------------------------------------------------*/
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+
+	
+  	if (thread_mlfqs) {
+		lock->holder = NULL;
+    	sema_up (&lock->semaphore);
+    	return ;
+  	}
 	struct list_elem *e;
 	struct thread *holde = lock->holder;
 	// donation list를 순회하며 해당하는 lock을 가진 thread list에서 제거

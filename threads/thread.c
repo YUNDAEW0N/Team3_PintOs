@@ -25,6 +25,48 @@
    Do not modify this value. */
 #define THREAD_BASIC 0xd42df210
 
+/* ----------------------------------------------------------*/
+#define FIXED_POINT_Q 14 // 소수 비트의 수를 정의합니다.
+
+// 고정 소수점 형식으로 변환합니다.
+#define CONVERT_TO_FIXED_POINT(n) ((n) * (1 << FIXED_POINT_Q))
+
+// 고정 소수점 형식에서 정수로 변환합니다 (절사).
+#define CONVERT_TO_INTEGER_TRUNC(x) ((x) / (1 << FIXED_POINT_Q))
+
+// 고정 소수점 형식에서 정수로 변환합니다 (반올림).
+#define CONVERT_TO_INTEGER_ROUND(x) (((x) >= 0) ? (((x) + (1 << (FIXED_POINT_Q - 1))) / (1 << FIXED_POINT_Q)) : (((x) - (1 << (FIXED_POINT_Q - 1))) / (1 << FIXED_POINT_Q)))
+
+// 덧셈을 수행합니다.
+#define ADD(x, y) ((x) + (y))
+
+// 뺄셈을 수행합니다.
+#define SUBTRACT(x, y) ((x) - (y))
+
+// x에 n을 더합니다.
+#define ADD_CONSTANT(x, n) ((x) + ((n) * (1 << FIXED_POINT_Q)))
+
+// x에서 n을 뺍니다.
+#define SUBTRACT_CONSTANT(x, n) ((x) - ((n) * (1 << FIXED_POINT_Q)))
+
+// 곱셈을 수행합니다.
+#define MULTIPLY(x, y) (((int64_t)(x)) * (y) / (1 << FIXED_POINT_Q))
+
+// x를 n으로 곱합니다.
+#define MULTIPLY_CONSTANT(x, n) ((x) * (n))
+
+// 나눗셈을 수행합니다.
+#define DIVIDE(x, y) (((int64_t)(x)) * (1 << FIXED_POINT_Q) / (y))
+
+// x를 n으로 나눕니다.
+#define DIVIDE_CONSTANT(x, n) ((x) / (n))
+
+/*load_avg 전역 변수*/
+int load_avg;
+
+/* -------------------------------------------------------------*/
+
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -190,6 +232,7 @@ thread_start (void) {
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
+	load_avg = LOAD_AVG_DEFAULT;
 
 	/* Start preemptive thread scheduling. */
 	intr_enable ();
@@ -384,9 +427,9 @@ thread_yield (void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) {
-	// thread_current ()->origin_priority = new_priority;
-	/*ready_list sort 하면 됨 ( priority 기준으로)*/
-	// list_sort(&ready_list,compare_priority,NULL);
+	if (thread_mlfqs)
+		return;
+
 	enum intr_level old_level;
 	struct thread *curr = thread_current();
 	old_level = intr_disable();
@@ -408,28 +451,109 @@ thread_get_priority (void) {
 void
 thread_set_nice (int nice UNUSED) {
 	/* TODO: Your implementation goes here */
+	enum intr_level old_level = intr_disable ();
+  	thread_current ()->nice = nice;
+  	calculate_priority (thread_current ());
+
+	if (!list_empty (&ready_list) && 
+    thread_current ()->priority < 
+    list_entry (list_front (&ready_list), struct thread, elem)->priority)
+        thread_yield ();
+		
+  	intr_set_level (old_level);
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	enum intr_level old_level = intr_disable ();
+  	int nice = thread_current ()-> nice;
+  	intr_set_level (old_level);
+  	return nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	enum intr_level old_level = intr_disable ();
+  	int load_avg_value = CONVERT_TO_INTEGER_ROUND(MULTIPLY_CONSTANT(load_avg, 100));
+  	intr_set_level (old_level);
+  	return load_avg_value;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) {
 	/* TODO: Your implementation goes here */
-	return 0;
+	enum intr_level old_level = intr_disable ();
+  	int recent_cpu= CONVERT_TO_INTEGER_ROUND(MULTIPLY_CONSTANT(thread_current ()->recent_cpu, 100));
+  	intr_set_level (old_level);
+  	return recent_cpu;
 }
+
+void calculate_priority(struct thread *t)
+{
+	if (t == idle_thread)
+		return;
+
+	t->priority = SUBTRACT(CONVERT_TO_FIXED_POINT(PRI_MAX),
+				SUBTRACT(DIVIDE(t->recent_cpu,4),MULTIPLY(t->nice,2)));
+}
+
+void calculate_recent_cpu(struct thread *t)
+{
+	if (t == idle_thread)
+		return;
+	t->recent_cpu = ADD_CONSTANT(MULTIPLY(DIVIDE(MULTIPLY_CONSTANT(load_avg, 2),
+				ADD_CONSTANT(MULTIPLY_CONSTANT(load_avg, 2), 1)), t->recent_cpu), t->nice);
+}
+
+void calculate_load_avg(void)
+{
+	int ready_threads;
+
+	if (thread_current() == idle_thread)
+		ready_threads = list_size (&ready_list);
+	else
+		ready_threads = list_size (&ready_list) +1;
+
+	load_avg = ADD(MULTIPLY(DIVIDE(CONVERT_TO_FIXED_POINT(59), CONVERT_TO_FIXED_POINT(60)), load_avg), 
+                     MULTIPLY_CONSTANT(DIVIDE(CONVERT_TO_FIXED_POINT(1),CONVERT_TO_FIXED_POINT(60)), ready_threads));
+}
+
+void increment_recent_cpu(void)
+{
+	if (thread_current() != idle_thread)
+		thread_current()->recent_cpu = ADD(thread_current()->recent_cpu,1);	
+}
+
+void recalculate_recent_cpu(void)
+{
+	struct list_elem *e;
+
+	for (e = list_begin(&ready_list); e != list_end(&ready_list);)
+	{
+		struct thread *t = list_entry(e,struct thread, elem);
+		calculate_recent_cpu(t);
+		e = list_next(e);
+	} 
+}
+
+void recalculate_priority(void)
+{
+	struct list_elem *e;
+
+	for (e = list_begin(&ready_list); e != list_end(&ready_list);)
+	{
+		struct thread *t = list_entry(e,struct thread, elem);
+		calculate_priority(t);
+		e = list_next(e);
+	} 
+}
+
+
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
@@ -495,8 +619,12 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->origin_priority = priority;
 	t->magic = THREAD_MAGIC;
 
+	/*donation*/
 	list_init(&t->donations);
 	t->wait_on_lock = NULL;
+	/*advanced*/
+	t->nice = NICE_DEFAULT;
+	t->recent_cpu = RECENT_CPU_DEFAULT;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -706,14 +834,15 @@ donate_set_priority(struct thread *new){
 		for(e = list_front(&new->donations); e != list_end(&new->donations);)
 		{
 
-				if(list_entry(e, struct thread, d_elem)->priority > big_pri){
-					big_pri = list_entry(e, struct thread, d_elem)->priority;
-					}
-				else{
-					e = list_next(e);
+			if(list_entry(e, struct thread, d_elem)->priority > big_pri){
+				big_pri = list_entry(e, struct thread, d_elem)->priority;
 			}
+			else{
+				e = list_next(e);
 			}
+		}
 	}
+	
 	if(big_pri != -1){
 		new->priority = big_pri;
 	}
