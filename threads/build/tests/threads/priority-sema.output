@@ -4,11 +4,7 @@ Kernel command line: -q run priority-sema
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-<<<<<<< HEAD
-Calibrating timer...  117,760,000 loops/s.
-=======
-Calibrating timer...  130,867,200 loops/s.
->>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
+Calibrating timer...  105,062,400 loops/s.
 Boot complete.
 Executing 'priority-sema':
 (priority-sema) begin
@@ -34,13 +30,8 @@ Executing 'priority-sema':
 (priority-sema) Back in main thread.
 (priority-sema) end
 Execution of 'priority-sema' complete.
-<<<<<<< HEAD
-Timer: 29 ticks
-Thread: 0 idle ticks, 29 kernel ticks, 0 user ticks
-=======
-Timer: 30 ticks
-Thread: 0 idle ticks, 30 kernel ticks, 0 user ticks
->>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
+Timer: 37 ticks
+Thread: 0 idle ticks, 38 kernel ticks, 0 user ticks
 Console: 1232 characters output
 Keyboard: 0 keys pressed
 Powering off...

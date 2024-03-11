@@ -4,11 +4,7 @@ Kernel command line: -q run priority-donate-sema
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-<<<<<<< HEAD
-Calibrating timer...  157,081,600 loops/s.
-=======
-Calibrating timer...  6,547,200 loops/s.
->>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
+Calibrating timer...  130,662,400 loops/s.
 Boot complete.
 Executing 'priority-donate-sema':
 (priority-donate-sema) begin
@@ -21,14 +17,8 @@ Executing 'priority-donate-sema':
 (priority-donate-sema) Main thread finished.
 (priority-donate-sema) end
 Execution of 'priority-donate-sema' complete.
-<<<<<<< HEAD
-Timer: 24 ticks
-Thread: 0 idle ticks, 24 kernel ticks, 0 user ticks
+Timer: 26 ticks
+Thread: 0 idle ticks, 26 kernel ticks, 0 user ticks
 Console: 772 characters output
-=======
-Timer: 19 ticks
-Thread: 0 idle ticks, 19 kernel ticks, 0 user ticks
-Console: 770 characters output
->>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 Keyboard: 0 keys pressed
 Powering off...
