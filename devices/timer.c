@@ -78,8 +78,10 @@ timer_calibrate (void) {
 /* Returns the number of timer ticks since the OS booted. */
 int64_t
 timer_ticks (void) {
+	//잠깐 인터럽트 끔
 	enum intr_level old_level = intr_disable ();
 	int64_t t = ticks;
+	//원래대로 돌림
 	intr_set_level (old_level);
 	barrier ();
 	return t;
@@ -93,13 +95,13 @@ timer_elapsed (int64_t then) {
 }
 
 /* Suspends execution for approximately TICKS timer ticks. */
+// ticks 시간동안 프로그램을 멈추겠다
 void
 timer_sleep (int64_t ticks) {
 	int64_t start = timer_ticks ();
 	ASSERT (intr_get_level () == INTR_ON);
-	
-	thread_sleep(timer_ticks() + ticks);
 
+	thread_sleep(start + ticks);
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -126,27 +128,29 @@ timer_print_stats (void) {
 	printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
-
+	/*
+		1. sleeplist 와 전역 tick 확인.
+		2. 깨울 thread 있는지 확인.
+		3. 깨울 쓰레드를 준비 리스트로 이동.
+		4. 전역 tick 업데이트 
+	*/
+	thread_awake(ticks);
 	if(thread_mlfqs){
-	//mlfqs 전용.
-		increment_recent_cpu();
-
-		if(ticks %TIMER_FREQ == 0){
-			calculating_load_avg();
-			set_thread_recent_cpu();
-
+		update_recent_cpu();
+		if(ticks % TIMER_FREQ == 0 ){
+			update_load_avg();
+			decay_recent_cpu();
 		}
-				if(ticks%4 == 0){
-			set_thread_priority();
-
+		if(ticks % 4 == 0) {
+			update_priority();
 		}
 	}
-	thread_wake_up(ticks);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
