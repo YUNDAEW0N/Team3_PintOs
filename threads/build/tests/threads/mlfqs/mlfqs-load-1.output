@@ -9,6 +9,7 @@ Boot complete.
 Executing 'mlfqs-load-1':
 (mlfqs-load-1) begin
 (mlfqs-load-1) spinning for up to 45 seconds, please wait...
+<<<<<<< HEAD
 (mlfqs-load-1) load average rose to 0.5 after 42 seconds
 (mlfqs-load-1) sleeping for another 10 seconds, please wait...
 (mlfqs-load-1) load average fell back below 0.5 (to 0.45)
@@ -17,6 +18,16 @@ Executing 'mlfqs-load-1':
 Execution of 'mlfqs-load-1' complete.
 Timer: 5300 ticks
 Thread: 1000 idle ticks, 4300 kernel ticks, 0 user ticks
+=======
+(mlfqs-load-1) load average rose to 0.5 after 41 seconds
+(mlfqs-load-1) sleeping for another 10 seconds, please wait...
+(mlfqs-load-1) load average fell back below 0.5 (to 0.43)
+(mlfqs-load-1) PASS
+(mlfqs-load-1) end
+Execution of 'mlfqs-load-1' complete.
+Timer: 5200 ticks
+Thread: 1000 idle ticks, 4200 kernel ticks, 0 user ticks
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 Console: 690 characters output
 Keyboard: 0 keys pressed
 Powering off...

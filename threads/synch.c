@@ -111,13 +111,13 @@ bool greater_priority_lock (const struct list_elem *a, const struct list_elem *b
 
 void
 sema_down (struct semaphore *sema) {
-	enum intr_level old_level;
-
+	
+	enum intr_level old_level = intr_disable();
 	ASSERT (sema != NULL);
 	ASSERT (!intr_context ());
 
-	old_level = intr_disable ();
 	while (sema->value == 0) {
+<<<<<<< HEAD
 		list_insert_ordered(&sema->waiters,&thread_current()->elem,greater_priority,NULL);
 		thread_block ();
 	}
@@ -135,6 +135,10 @@ sema_down_sleep (struct semaphore *sema) {
 	old_level = intr_disable ();
 	while (sema->value == 0) {
 		list_insert_ordered(&sema->waiters,&thread_current()->elem,less_awake_mlfqs,NULL);
+=======
+		list_insert_ordered(&sema->waiters, &thread_current()->elem, thread_donation_priority_less, NULL);
+		
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 		thread_block ();
 	}
    sema->value--;
@@ -194,6 +198,7 @@ sema_up_awake (struct semaphore *sema) {
 	enum intr_level old_level;
 	ASSERT (sema != NULL);
 	old_level = intr_disable ();
+<<<<<<< HEAD
    sema->value++;
 	if (!list_empty (&sema->waiters))
    {
@@ -205,6 +210,18 @@ sema_up_awake (struct semaphore *sema) {
       }
    }
 
+=======
+	sema->value++;
+	if (!list_empty (&sema->waiters)){
+		list_sort(&sema->waiters, thread_donation_priority_less, NULL);
+		struct thread *next_thread = list_entry (list_pop_front (&sema->waiters),
+					struct thread, elem);
+		thread_unblock (next_thread);
+		if(next_thread->priority > thread_current()->priority){
+			thread_yield();
+		}
+		}
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 	intr_set_level (old_level);
 }
 
@@ -281,6 +298,7 @@ lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
+<<<<<<< HEAD
    if(!thread_mlfqs){
       if(lock->holder != NULL && find_elem_by_lock(&lock->holder->lock_list,lock) == NULL)
       {
@@ -290,7 +308,23 @@ lock_acquire (struct lock *lock) {
    }
    
    sema_down (&lock->semaphore);
+=======
+	struct thread *curr = thread_current ();
+	if(!thread_mlfqs){
+		// priority 순으로 donation 리스트 넣는법....
+		if(lock->holder){
+			curr->wait_on_lock = lock; // lock을 필요로 하는 thread의 address 저장
+			list_insert_ordered(&curr->wait_on_lock->holder->donation, &curr->d_elem, donation_priority_less,NULL); // donation 리스트에 넣기.
+
+			donate_priority();
+		}
+	}
+	sema_down (&lock->semaphore);
+
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 	lock->holder = thread_current ();
+	curr->wait_on_lock = NULL;
+
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -310,6 +344,7 @@ lock_try_acquire (struct lock *lock) {
 	if (success)
 		lock->holder = thread_current ();
 	return success;
+
 }
 
 /* Releases LOCK, which must be owned by the current thread.
@@ -323,6 +358,7 @@ lock_release (struct lock *lock) {
    struct list_elem *e;
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+<<<<<<< HEAD
    if(!thread_mlfqs){
       if((e = find_elem_by_lock(&thread_current()->lock_list,lock)) != NULL)
       {
@@ -331,7 +367,39 @@ lock_release (struct lock *lock) {
       }  
    }
    lock->holder = NULL;
+=======
+
+	if(!thread_mlfqs){
+		struct list_elem *e;
+		struct thread *holde = lock->holder;
+		// donation list를 순회하며 해당하는 lock을 가진 thread list에서 제거
+		if (!list_empty(&holde->donation)){	
+			for(e = list_begin(&holde->donation); e != list_end(&holde->donation);)
+			{
+					if(list_entry(e, struct thread, d_elem)->wait_on_lock == lock){
+						list_entry(e, struct thread, d_elem)->wait_on_lock = NULL; // wait_on_lock 초기화
+						// 해당하는 스레드의 priority 초기화
+						donate_set_priority(list_entry(e, struct thread, d_elem));
+						list_remove(e); // d_elem 제거
+						}
+					else{
+						e = list_next(e);
+						}
+				}
+			}
+
+		// Donation 용 추가 (여기까지)
+	}
+	lock->holder = NULL;
+	
+	// 현재 스레드의 priority를 init 값으로 초기화
+	if(!thread_mlfqs){
+		donate_set_priority(thread_current());
+	}
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 	sema_up (&lock->semaphore);
+
+	
 }
 
 /* Returns true if the current thread holds LOCK, false
@@ -385,8 +453,13 @@ cond_wait (struct condition *cond, struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	sema_init (&waiter.semaphore, 0);
+<<<<<<< HEAD
    list_insert_ordered(&cond->waiters,&waiter.elem,
 		greater_priority_cond,NULL); 
+=======
+	// list_push_back (&cond->waiters, &waiter.elem);
+	list_insert_ordered(&cond->waiters, &waiter.elem, semaphore_priority_less,NULL);
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 	lock_release (lock);
 	sema_down (&waiter.semaphore);
 	lock_acquire (lock);
@@ -404,6 +477,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (cond != NULL);
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
+<<<<<<< HEAD
    
 	if (!list_empty (&cond->waiters))
       list_sort(&cond->waiters,greater_priority_cond,NULL);
@@ -416,6 +490,14 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
          thread_yield();
       }
    
+=======
+	
+	if (!list_empty (&cond->waiters)){
+		list_sort(&cond->waiters,semaphore_priority_less , NULL);
+		sema_up (&list_entry (list_pop_front (&cond->waiters),
+					struct semaphore_elem, elem)->semaphore);
+	}
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 }
 
 /* Wakes up all threads, if any, waiting on COND (protected by
@@ -432,3 +514,26 @@ cond_broadcast (struct condition *cond, struct lock *lock) {
 	while (!list_empty (&cond->waiters))
 		cond_signal (cond, lock);
 }
+
+
+bool semaphore_priority_less(const struct list_elem *a,
+                             const struct list_elem *b,
+                             void *aux UNUSED) {
+    struct semaphore_elem *sem_a = list_entry(a, struct semaphore_elem, elem);
+    struct semaphore_elem *sem_b = list_entry(b, struct semaphore_elem, elem);
+
+    if (list_empty(&sem_a->semaphore.waiters)) {
+        return false; // a가 빈 리스트라면 b가 무조건 크다고 가정
+    }
+
+    if (list_empty(&sem_b->semaphore.waiters)) {
+        return true; // b가 빈 리스트라면 a가 무조건 작다고 가정
+    }
+    struct thread *thread_a = list_entry(list_front(&sem_a->semaphore.waiters),
+                                         struct thread, elem);
+    struct thread *thread_b = list_entry(list_front(&sem_b->semaphore.waiters),
+                                         struct thread, elem);
+
+    return thread_a->priority > thread_b->priority;
+}
+

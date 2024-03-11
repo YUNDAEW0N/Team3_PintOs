@@ -8,6 +8,8 @@
 #include "threads/synch.h"
 #include "threads/thread.h"
 
+
+
 /* See [8254] for hardware details of the 8254 timer chip. */
 
 #if TIMER_FREQ < 19
@@ -16,6 +18,8 @@
 #if TIMER_FREQ > 1000
 #error TIMER_FREQ <= 1000 recommended
 #endif
+
+// static struct semaphore *sleep; // sleep 타이머용 세마포어.
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
@@ -43,6 +47,7 @@ timer_init (void) {
 	outb (0x40, count >> 8);
 
 	intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -94,10 +99,15 @@ timer_elapsed (int64_t then) {
 void
 timer_sleep (int64_t ticks) {
 	int64_t start = timer_ticks ();
-
 	ASSERT (intr_get_level () == INTR_ON);
+<<<<<<< HEAD
 
 	thread_sleep(start + ticks);
+=======
+	
+	thread_sleep(timer_ticks() + ticks);
+
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -130,6 +140,7 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
+<<<<<<< HEAD
 	/*
 		1. sleeplist 와 전역 tick 확인.
 		2. 깨울 thread 있는지 확인.
@@ -147,6 +158,24 @@ timer_interrupt (struct intr_frame *args UNUSED) {
 			update_priority();
 		}
 	}
+=======
+
+	if(thread_mlfqs){
+	//mlfqs 전용.
+		increment_recent_cpu();
+
+		if(ticks %TIMER_FREQ == 0){
+			calculating_load_avg();
+			set_thread_recent_cpu();
+
+		}
+				if(ticks%4 == 0){
+			set_thread_priority();
+
+		}
+	}
+	thread_wake_up(ticks);
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

@@ -99,6 +99,20 @@ struct thread {
 	int nice;
 	int32_t recent_cpu;
 
+	// 쓰레드 tick. sleep 함수 용.
+	int64_t ticks;
+
+	//Donation용
+	struct lock *wait_on_lock; // 현재 기다리는 lock 포인터
+	struct list donation; // 현재 이 스레드가 받는 기부리스트가 있을 경우.
+	struct list_elem d_elem;
+	int init_pri; //맨처음에 선언된 priority
+
+	//mlfqs용
+	int recent_cpu;
+	int nice;
+	struct list_elem all_elem;
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -149,9 +163,36 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 void update_load_avg(void);
 void do_iret (struct intr_frame *tf);
+<<<<<<< HEAD
 void update_recent_cpu(void);
 void decay_recent_cpu(void);
 void set_decay(struct thread *t);
 void set_priority(struct thread *t);
 void update_priority(void);
+=======
+
+void thread_wake_up(int64_t ticks);
+void thread_sleep(int64_t tick); 
+
+bool thread_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool donation_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool thread_donation_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux);
+void donate_priority(void);
+void donate_set_priority(struct thread *new);
+
+
+int convert_x_n(const signed int x);
+void calculating_recent_cpu(struct thread *t);
+void calculating_load_avg(void);
+void set_thread_recent_cpu(void);
+void calculating_therad_priority(struct thread *t);
+
+void set_thread_priority(void);
+int max_priority(void);
+void increment_recent_cpu(void);
+void test_max_priority(struct thread *t);
+
+void test_all_list(void);
+void thread_yield_current (struct thread *cur);
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 #endif /* threads/thread.h */
