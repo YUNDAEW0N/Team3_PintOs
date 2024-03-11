@@ -149,9 +149,36 @@ int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 void update_load_avg(void);
 void do_iret (struct intr_frame *tf);
+<<<<<<< HEAD
 void update_recent_cpu(void);
 void decay_recent_cpu(void);
 void set_decay(struct thread *t);
 void set_priority(struct thread *t);
 void update_priority(void);
+=======
+
+void thread_wake_up(int64_t ticks);
+void thread_sleep(int64_t tick); 
+
+bool thread_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool donation_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool thread_donation_priority_less(const struct list_elem *a, const struct list_elem *b, void *aux);
+void donate_priority(void);
+void donate_set_priority(struct thread *new);
+
+
+int convert_x_n(const signed int x);
+void calculating_recent_cpu(struct thread *t);
+void calculating_load_avg(void);
+void set_thread_recent_cpu(void);
+void calculating_therad_priority(struct thread *t);
+
+void set_thread_priority(void);
+int max_priority(void);
+void increment_recent_cpu(void);
+void test_max_priority(struct thread *t);
+
+void test_all_list(void);
+void thread_yield_current (struct thread *cur);
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 #endif /* threads/thread.h */

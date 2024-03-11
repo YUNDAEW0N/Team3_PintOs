@@ -4,7 +4,11 @@ Kernel command line: -q run alarm-multiple
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
+<<<<<<< HEAD
+Calibrating timer...  157,081,600 loops/s.
+=======
 Calibrating timer...  153,804,800 loops/s.
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 Boot complete.
 Executing 'alarm-multiple':
 (alarm-multiple) begin
@@ -50,8 +54,13 @@ Executing 'alarm-multiple':
 (alarm-multiple) thread 4: duration=50, iteration=7, product=350
 (alarm-multiple) end
 Execution of 'alarm-multiple' complete.
+<<<<<<< HEAD
+Timer: 579 ticks
+Thread: 550 idle ticks, 30 kernel ticks, 0 user ticks
+=======
 Timer: 587 ticks
 Thread: 550 idle ticks, 37 kernel ticks, 0 user ticks
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 Console: 2995 characters output
 Keyboard: 0 keys pressed
 Powering off...

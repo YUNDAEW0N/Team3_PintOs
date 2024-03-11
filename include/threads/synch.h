@@ -42,8 +42,15 @@ void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);
 void cond_signal (struct condition *, struct lock *);
 void cond_broadcast (struct condition *, struct lock *);
+<<<<<<< HEAD
 void sema_up_awake (struct semaphore *sema);
 void sema_down_sleep (struct semaphore *sema);
+=======
+
+
+bool semaphore_priority_less(const struct list_elem *a,const struct list_elem *b,void *aux);
+
+>>>>>>> ac2d6c5b421490ab8d18073c7662a35ea55a4c66
 /* Optimization barrier.
  *
  * The compiler will not reorder operations across an
