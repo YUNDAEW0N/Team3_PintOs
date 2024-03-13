@@ -268,6 +268,18 @@ thread_print_stats (void) {
    The code provided sets the new thread's `priority' member to
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
+
+/* 주어진 초기 우선순위와 함께 함수를 실행하고 AUX를 인자로 전달하는 새로운 커널 스레드를 생성하며,
+그리고 그것을 준비 큐에 추가합니다. 새로운 스레드의 식별자를 반환하며, 생성이 실패한 경우에는 TID_ERROR를 반환합니다.
+
+만약 이미 thread_start()가 호출되었다면, 새로운 스레드는 thread_create()가 반환되기 전에 스케줄될 수 있습니다.
+그리고 심지어 thread_create()가 반환되기 전에 이미 종료될 수도 있습니다.
+반면에, 기존 스레드는 새로운 스레드가 스케줄되기 전까지 아무런 제약 없이 실행될 수 있습니다.
+만약 순서를 보장해야 한다면, 세마포어나 다른 동기화 기법을 사용하시기 바랍니다.
+
+제공된 코드는 새로운 스레드의 'priority' 멤버를 PRIORITY로 설정합니다만,
+실제 우선순위 스케줄링은 아직 구현되지 않았습니다.
+우선순위 스케줄링은 Problem 1-3에서의 목표입니다. */
 tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
@@ -290,7 +302,7 @@ thread_create (const char *name, int priority,
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
 	t->tf.rip = (uintptr_t) kernel_thread;
 	t->tf.R.rdi = (uint64_t) function;
-	t->tf.R.rsi = (uint64_t) aux;
+	t->tf.R.rsi = (uint64_t) aux; 							// fn_copy가 저장된다. args-single
 	t->tf.ds = SEL_KDSEG;
 	t->tf.es = SEL_KDSEG;
 	t->tf.ss = SEL_KDSEG;

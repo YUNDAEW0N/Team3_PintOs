@@ -100,6 +100,11 @@ memchr (const void *block_, int ch_, size_t size) {
    null pointer if C does not appear in STRING.  If C == '\0'
    then returns a pointer to the null terminator at the end of
    STRING. */
+
+/* 문자열 STRING에서 문자 C의 첫 번째 발생을 찾아 반환하거나,
+C가 STRING에 나타나지 않으면 널 포인터를 반환합니다.
+C == '\0'이면 STRING의 끝에 있는 널 종단자를 가리키는 포인터를 반환합니다. 
+즉, 문자열에서 특정 문자를 찾아 그 위치를 가르키는 포인터를 반환합니다.*/
 char *
 strchr (const char *string, int c_) {
 	char c = c_;
@@ -107,7 +112,7 @@ strchr (const char *string, int c_) {
 	ASSERT (string);
 
 	for (;;)
-		if (*string == c)
+		if (*string == c)				// *string은 string이 가르키는 값을 역참조한 것. 이중포인터 X
 			return (char *) string;
 		else if (*string == '\0')
 			return NULL;
@@ -215,6 +220,34 @@ outputs:
 'to'
 'tokenize.'
 */
+
+/* 문자열을 DELIMITERS로 구분된 토큰으로 분할합니다. 
+   이 함수를 처음 호출할 때에는 S가 토큰화할 문자열이어야 하며, 후속 호출에서는 널 포인터이어야 합니다. 
+   SAVE_PTR는 토크나이저의 위치를 추적하는 데 사용되는 'char *' 변수의 주소입니다. 
+   각 호출마다 반환 값은 문자열의 다음 토큰이거나 남아 있는 토큰이 없는 경우 널 포인터입니다.
+
+   이 함수는 여러 인접한 구분 기호를 단일 구분 기호로 취급합니다. 
+   반환된 토큰은 절대 길이가 0이 되지 않습니다. 
+   DELIMITERS는 단일 문자열 내에서 한 호출에서 다음 호출로 변경될 수 있습니다.
+
+   strtok_r()은 문자열 S를 수정하여 구분 기호를 널 바이트로 변경합니다. 
+   따라서 S는 수정 가능한 문자열이어야 합니다. 
+   특히 C에서 문자열 리터럴은 수정 가능하지 않지만 (역호환성을 위해) 'const'가 아닙니다.
+
+   Example usage:
+   char s[] = "  String to  tokenize. ";
+   char *token, *save_ptr;
+
+   for (token = strtok_r (s, " ", &save_ptr); token != NULL;
+   token = strtok_r (NULL, " ", &save_ptr))
+   printf ("'%s'\n", token);
+
+outputs:
+'String'
+'to'
+'tokenize.'
+
+*/
 char *
 strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	char *token;
@@ -229,7 +262,9 @@ strtok_r (char *s, const char *delimiters, char **save_ptr) {
 	ASSERT (s != NULL);
 
 	/* Skip any DELIMITERS at our current position. */
-	while (strchr (delimiters, *s) != NULL) {
+	while (strchr (delimiters, *s) != NULL) {					
+		// 여기서 *s는 역참조. 숫자를 넘겨준다. 그럼 strchr함수 내에 있는 저장 공간에 숫자가 담긴다.(추측)
+		
 		/* strchr() will always return nonnull if we're searching
 		   for a null byte, because every string contains a null
 		   byte (at the end). */
@@ -298,6 +333,12 @@ strnlen (const char *string, size_t maxlen) {
    increasingly popular extension.  See
 http://www.courtesan.com/todd/papers/strlcpy.html for
 information on strlcpy(). */
+
+/* 문자열 SRC를 DST로 복사합니다. SRC가 SIZE - 1보다 긴 경우에는 SIZE - 1 문자만 복사됩니다.
+크기가 0이 아닌 경우에는 항상 null 종료자가 DST에 쓰여집니다.
+널 종료자를 포함하지 않은 SRC의 길이를 반환합니다.
+strlcpy()는 표준 C 라이브러리에 포함되어 있지 않지만, 점점 더 인기 있는 확장입니다.
+strlcpy()에 대한 정보는 아래 링크를 참조하세요.*/
 size_t
 strlcpy (char *dst, const char *src, size_t size) {
 	size_t src_len;

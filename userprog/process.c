@@ -38,20 +38,32 @@ process_init (void) {
  * before process_create_initd() returns. Returns the initd's
  * thread id, or TID_ERROR if the thread cannot be created.
  * Notice that THIS SHOULD BE CALLED ONCE. */
+
+/* "initd"라는 첫 번째 유저 랜드 프로그램을 시작합니다. 이 프로그램은 FILE_NAME에서 로드됩니다.
+ * 새 스레드는 process_create_initd()가 반환되기 전에 스케줄링될 수 있습니다 (심지어 종료될 수도 있음).
+ * initd의 스레드 ID를 반환하거나, 스레드를 생성할 수 없는 경우 TID_ERROR를 반환합니다.
+ * 이 함수는 단 한 번 호출되어야 함에 유의하세요. */
 tid_t
 process_create_initd (const char *file_name) {
-	char *fn_copy;
+	char *fn_copy, *token, *save_ptr;
 	tid_t tid;
+	
 
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
+
 	fn_copy = palloc_get_page (0);
 	if (fn_copy == NULL)
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
+	token = strtok_r(file_name, " ", &save_ptr);
+	// printf("임시로 저장된 파일명: %s\n", token);
+	// printf("copy된건 뭐야?: %s\n", fn_copy);
+
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	// tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -168,6 +180,9 @@ process_exec (void *f_name) {
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
+
+	/* "스레드 구조체 내에서 intr_frame을 사용할 수 없습니다. 현재 스레드가 재스케줄되면, 
+	실행 정보가 해당 멤버에 저장되기 때문입니다." */
 	struct intr_frame _if;
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
@@ -179,16 +194,71 @@ process_exec (void *f_name) {
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
+
+	char arg_cnt = 1; 							// 스트링이 두 덩어리라면, 띄어쓰기는 한 개이므로 +1
+	char* save_ptr;								// strtok()용 save_ptr;
+	int total_cnt = 0;							// character 갯수 세기용
+	
+	// Stack에 넣기전, arguments passing
+	for(int i = 0; i < strlen(file_name); i++){
+		if(file_name[i] == ' '){
+			arg_cnt++;
+		}
+	}
+
+	char *arg_list[arg_cnt];					// 메모리는 블록의 덩어리이므로, 문자열 리스트에 담는다.
+	int64_t arg_addr_list[arg_cnt];				// 리스트는 포인터이므로, 리스트의 원소를 가르킬 주소를 담을 리스트 선언
+
+	for(int i = 0; i < arg_cnt; i++){
+		arg_list[i] = strtok_r((i == 0) ? file_name : NULL, " ", &save_ptr);	// 스택의 0번째는 파일 이름이므로.
+	}
+
+	// 메모리 스택 영역이므로 rsp의 값을 낮추고, arg_list에 담긴 char형 데이터를 통째로 넣어준다.
+	for(int i = arg_cnt - 1; i >= 0; i--){
+		int len = strlen(arg_list[i]) + 1;		
+		_if.rsp -= len;
+		// args_single(v)onearg(v)이므로 +1
+		total_cnt += len;
+		strlcpy(_if.rsp, arg_list[i], len);		// string 형이기 때문에 strlcpy
+		arg_addr_list[i] = _if.rsp;				// rsp가 list의 시작주소이므로 arg_addr_list에 담는다.
+	}
+
+	// word size는 8바이트이기 때문에, 8의 배수가 아니라면 패딩해준다.
+	if((total_cnt % 8) != 0){
+		_if.rsp -= 8 - (total_cnt % 8);
+		memset(_if.rsp, 0, 8 - (total_cnt % 8));// 패딩안을 0으로 채워준다.
+	}
+
+	_if.rsp -= 8;								// 마지막은 0(NULL)
+	memset(_if.rsp, 0, 8);						// 0으로 채워준다.
+
+	for(int i = arg_cnt - 1; i >= 0 ; i--){		// 각 데이터의 주소를 담아준다.
+		_if.rsp -= 8;
+		memcpy(_if.rsp, &arg_addr_list[i], 8);	// 데이터의 주소는 숫자이므로 memcpy
+	}
+
+	_if.rsp -= 8;
+	memset(_if.rsp, 0, 8);						// return address 
+
+	_if.R.rdi = arg_cnt;
+	_if.R.rsi = _if.rsp + 8;
+
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
 		return -1;
+
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
 }
 
+// void mem_padd(uintptr_t *ptr){
+// 	*ptr -= 8;
+// 	memset(ptr, 0, 8);
+// }
 
 /* Waits for thread TID to die and returns its exit status.  If
  * it was terminated by the kernel (i.e. killed due to an
@@ -204,6 +274,11 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
+
+	while(1){					// 이거 안하면 안돌아감 위 주석 참고
+
+	}
+
 	return -1;
 }
 
@@ -320,6 +395,10 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Stores the executable's entry point into *RIP
  * and its initial stack pointer into *RSP.
  * Returns true if successful, false otherwise. */
+
+/* FILE_NAME으로부터 ELF 실행 파일을 현재 스레드로 불러옵니다.
+실행 파일의 진입 지점을 *RIP에 저장하고, 초기 스택 포인터를 *RSP에 저장합니다.
+성공하면 true를 반환하고, 그렇지 않으면 false를 반환합니다. */
 static bool
 load (const char *file_name, struct intr_frame *if_) {
 	struct thread *t = thread_current ();
@@ -336,7 +415,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	process_activate (thread_current ());
 
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	file = filesys_open (thread_current()->name);			// 현재 쓰레드의 네임(파일 네임)을 넣어준다.
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;

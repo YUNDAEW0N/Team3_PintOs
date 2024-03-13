@@ -74,6 +74,14 @@ fsutil_rm (char **argv) {
  * beginning of the scratch disk.  Later calls advance across the
  * disk.  This disk position is independent of that used for
  * fsutil_get(), so all `put's should precede all `get's. */
+
+/* "scratch" 디스크인 hdc 또는 hd1:0에서 파일 ARGV[1]로 파일 시스템에 복사합니다.
+스크래치 디스크의 현재 섹터는 "PUT\0" 문자열로 시작해야 하며,
+그 뒤에는 파일 크기를 바이트 단위로 나타내는 32비트 리틀 엔디안 정수가 있어야 합니다.
+그 다음 섹터에는 파일 내용이 저장됩니다.
+이 함수의 첫 호출은 스크래치 디스크의 시작부터 읽어들입니다.
+이후 호출은 디스크를 따라 이동합니다.
+이 위치는 fsutil_get()에서 사용되는 위치와 독립적이므로 모든 'put'이 모든 'get'보다 앞에 위치해야 합니다. */
 void
 fsutil_put (char **argv) {
 	static disk_sector_t sector = 0;
@@ -137,6 +145,13 @@ fsutil_put (char **argv) {
  * beginning of the scratch disk.  Later calls advance across the
  * disk.  This disk position is independent of that used for
  * fsutil_put(), so all `put's should precede all `get's. */
+
+/* 파일 시스템에서 파일 FILE_NAME을 스크래치 디스크로 복사합니다.
+스크래치 디스크의 현재 섹터는 "GET\0"와 파일의 크기(32비트, 리틀 엔디안 형식)가 먼저 저장됩니다.
+이후 섹터에는 파일의 데이터가 저장됩니다.
+이 함수의 첫 호출은 스크래치 디스크의 시작부터 작성합니다.
+이후 호출은 디스크를 따라 이동합니다.
+이 위치는 fsutil_put()에서 사용되는 위치와 독립적이므로 모든 'put'은 모든 'get'보다 앞에 위치해야 합니다. */
 void
 fsutil_get (char **argv) {
 	static disk_sector_t sector = 0;
