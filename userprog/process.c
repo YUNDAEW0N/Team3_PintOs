@@ -42,6 +42,7 @@ tid_t
 process_create_initd (const char *file_name) {
 	char *fn_copy;
 	tid_t tid;
+	char *token, *save_ptr;
 
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
@@ -49,9 +50,9 @@ process_create_initd (const char *file_name) {
 	if (fn_copy == NULL)
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
-
+	token = strtok_r(file_name," ",&save_ptr);
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -164,6 +165,7 @@ int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
+	char * save_ptr;
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -178,12 +180,70 @@ process_exec (void *f_name) {
 
 	/* And then load the binary */
 	success = load (file_name, &_if);
+	//printf("_if.rsp :%x\n",_if.rsp);
+	/*-----------------------------------------------------*/
+	int arg_cnt=1;
+	int total_size=0;
+	// printf("before arg_cnt : %d\n", arg_cnt);
+	// printf("file_name len : %d\n",strlen(file_name));
+	// printf("file_name : %s\n",file_name);
+	for(int i=0;i<strlen(file_name);i++)
+	{
+		if(file_name[i] == ' '){
+			arg_cnt++;
+		}
+	}
+	// printf("arg_cnt : %d\n", arg_cnt);
+	char *arg_list[arg_cnt];
+	// arg_list[0] = thread_current()->name;
+	int64_t arg_addr_list[arg_cnt];
+
+	for(int i=0;i<arg_cnt;i++)
+	{
+		arg_list[i] = strtok_r((i == 0) ? file_name : NULL, " ", &save_ptr);
+		// printf("arg_list[%d] : %s\n",i,arg_list[i]);
+	}
+
+	for(int i=arg_cnt-1;i>=0;i--)
+	{
+		// printf("_if.rsp :%x\n",_if.rsp);
+		_if.rsp-=strlen(arg_list[i])+1;
+		// printf("_if.rsp :%x\n",_if.rsp);
+		strlcpy(_if.rsp,arg_list[i],strlen(arg_list[i])+1);
+		total_size+=strlen(arg_list[i])+1;
+		arg_addr_list[i]=_if.rsp;
+		//printf("arg_addr_list[%d] : %x\n",i,arg_addr_list[i]);
+		// printf("total_size : %d\n",total_size);
+	}
+
+	if(total_size % 8 !=0){
+		_if.rsp-=8-(total_size % 8);
+		memset(_if.rsp, 0, 8-(total_size % 8));
+		// printf("_if.rsp :%x\n",_if.rsp);
+	}
+	_if.rsp-=8;
+	memset(_if.rsp, 0, 8);
+	// printf("_if.rsp :%x\n",_if.rsp);
+
+	for(int i=arg_cnt-1;i>=0;i--)
+	{
+		_if.rsp-=8;
+		memcpy(_if.rsp,&arg_addr_list[i],8);
+	}
+	_if.rsp-=8;
+	memset(_if.rsp, 0, 8);
+
+	_if.R.rdi = arg_cnt;
+	_if.R.rsi = _if.rsp+8;
+
+	/*-----------------------------------------------------*/
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
 		return -1;
 
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
@@ -204,7 +264,10 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	return -1;
+	while(1)
+	{
+
+	}
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -335,8 +398,9 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	process_activate (thread_current ());
 
+
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	file = filesys_open (thread_current()->name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;

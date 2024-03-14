@@ -1,6 +1,9 @@
 {
     "files.associations": {
         "interrupt.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "flags.h": "c",
+        "intr-stubs.h": "c",
+        "mmu.h": "c"
     }
 }

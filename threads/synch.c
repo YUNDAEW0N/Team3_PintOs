@@ -372,8 +372,15 @@ cond_wait (struct condition *cond, struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	sema_init (&waiter.semaphore, 0);
-	// struct thread *sema =  list_entry(list_begin(&waiter.semaphore.waiters), struct thread, elem);
-	// sema->priority = lock->holder->priority;
+
+	/*------------------------------------------------------------------------------------------*/
+	/*lock->holder에 현재 쓰레드의 정보가 넘어오니까 그 정보의 priority를 강제로 넣어준다.
+	  근데 이렇게하면 결국 리스트의 tail 을 날려버리고 그걸 thread라고 강제로 캐스팅하는 꼴이 되어서
+	  이방법이 좋은 방법이 아닌 것 같음*/
+	struct thread *sema =  list_entry(list_begin(&waiter.semaphore.waiters), struct thread, elem);
+	sema->priority = lock->holder->priority;
+	/*------------------------------------------------------------------------------------------*/
+
 	//list_push_back (&cond->waiters, &waiter.elem);
 	list_insert_ordered(&cond->waiters,&waiter.elem,cond_compare_priority,NULL);
 	lock_release (lock);
@@ -396,7 +403,9 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED) {
 	ASSERT (lock_held_by_current_thread (lock));
  
 	if (!list_empty (&cond->waiters)){
-		list_sort(&cond->waiters,cond_compare_priority,NULL);
+		/*cond test 단계에서는 sort를 안해도 waiters 리스트가
+		  변하면 안되고 wait에서 넣은대로 있어야 되는거 아님???*/
+		//list_sort(&cond->waiters,cond_compare_priority,NULL); 
 		sema_up (&list_entry (list_pop_front (&cond->waiters),
 					struct semaphore_elem, elem)->semaphore);
 	}
