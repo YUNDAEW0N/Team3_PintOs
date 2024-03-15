@@ -124,6 +124,12 @@ __do_fork (void *aux) {
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
+	if (parent == current)
+		parent_if = &current->tf;
+	else {
+		current->parent = parent;
+		return ;
+	}
 	bool succ = true;
 
 	/* 1. Read the cpu context to local stack. */
@@ -189,7 +195,7 @@ process_exec (void *f_name) {
 	// printf("file_name : %s\n",file_name);
 	for(int i=0;i<strlen(file_name);i++)
 	{
-		if(file_name[i] == ' '){
+		if(file_name[i] == ' ' && file_name[i+1]!=' '){
 			arg_cnt++;
 		}
 	}
@@ -243,7 +249,7 @@ process_exec (void *f_name) {
 	if (!success)
 		return -1;
 
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
+	//hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
@@ -264,10 +270,7 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	while(1)
-	{
-
-	}
+	timer_sleep(10);
 }
 
 /* Exit the process. This function is called by thread_exit (). */

@@ -41,6 +41,143 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	printf ("system call!\n");
-	thread_exit ();
+	// printf ("system call!\n");
+	// thread_exit ();
+
+	switch (f->R.rax)
+	{
+	case SYS_HALT:
+		halt();
+		break;
+	case SYS_EXIT:
+		exit(f->R.rdi);
+		break;
+	case SYS_FORK:
+		//check_address(f->R.rdi);
+		fork(f->R.rdi);
+		break;
+	case SYS_EXEC:
+		/* code */
+		break;
+	case SYS_WAIT:
+		/* code */
+		break;
+	case SYS_CREATE:
+		/* code */
+		break;
+	case SYS_REMOVE:
+		/* code */
+		break;
+	case SYS_OPEN:
+		check_address(f->R.rdi);
+		open(f->R.rdi);
+		break;
+	case SYS_FILESIZE:
+		/* code */
+		break;
+	case SYS_READ:
+		/* code */
+		break;
+	case SYS_WRITE:
+		check_address(f->R.rsi);
+		write(f->R.rdi, f->R.rsi,f->R.rdx);
+		break;
+	case SYS_SEEK:
+		/* code */
+		break;
+	case SYS_TELL:
+		/* code */
+		break;
+	case SYS_CLOSE:
+		/* code */
+		break;
+	}
+}
+
+void check_address(void *addr)
+{
+	printf("!!\n");
+	struct thread *cur = thread_current();
+	if (is_kernel_vaddr(addr) || pml4_get_page(cur->pml4, addr) == NULL)
+		exit(-1);
+}
+
+void halt (void)
+{
+	power_off();
+}
+void exit (int status)
+{
+	printf ("%s: exit(%d)\n",thread_current()->name, status);
+	thread_exit();
+}
+// 미완성
+pid_t fork (const char *thread_name)
+{
+	int tid;
+
+	tid = process_fork(thread_name);
+
+	if (tid > 0)
+		return tid;
+	else if (tid < 0)
+		return -1;
+	else
+		return 0; 
+}
+int exec (const char *file)
+{
+
+}
+int wait (pid_t pid)
+{
+
+}
+bool create (const char *file, unsigned initial_size)
+{
+
+}
+bool remove (const char *file)
+{
+
+}
+
+int fd = 2;
+int open (const char *file)
+{
+	if (filesys_open(file)) {
+		return fd++;
+	}
+	else {
+		return -1;
+	}
+}
+
+int filesize (int fd)
+{
+
+}
+int read (int fd, void *buffer, unsigned length)
+{
+
+}
+int write (int fd, const void *buffer, unsigned length)
+{
+	putbuf(buffer, length);
+}
+void seek (int fd, unsigned position)
+{
+
+}
+unsigned tell (int fd)
+{
+
+}
+void close (int fd)
+{
+
+}
+int dup2(int oldfd, int newfd)
+{
+
 }

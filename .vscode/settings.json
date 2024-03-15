@@ -4,6 +4,15 @@
         "stdbool.h": "c",
         "flags.h": "c",
         "intr-stubs.h": "c",
-        "mmu.h": "c"
+        "mmu.h": "c",
+        "vaddr.h": "c",
+        "loader.h": "c",
+        "syscall.h": "c",
+        "stddef.h": "c",
+        "debug.h": "c",
+        "*.inc": "c",
+        "syscall-nr.h": "c",
+        "malloc.h": "c",
+        "lib.h": "c"
     }
 }

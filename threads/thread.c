@@ -287,7 +287,11 @@ tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
 	struct thread *t;
+	struct thread *cur = thread_current();
 	tid_t tid;
+
+	if ((struct thread *)aux == cur->parent)
+		return 0;
 
 	ASSERT (function != NULL);
 
@@ -311,6 +315,9 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
  
+	if ((struct thread *)aux == cur) {
+		list_push_back(&cur->child_list, &cur->c_elem);
+	}
 	/* Add to run queue. */
 	thread_unblock (t);
 
@@ -624,6 +631,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	/*advanced*/
 	t->nice = NICE_DEFAULT;
 	t->recent_cpu = RECENT_CPU_DEFAULT;
+
+	list_init(&t->child_list);
+	t->parent = NULL;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

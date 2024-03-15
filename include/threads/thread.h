@@ -109,6 +109,9 @@ struct thread {
 	struct lock *wait_on_lock;
 	int origin_priority;
 
+	struct list child_list;
+	struct list_elem c_elem;
+	struct thread *parent;
 	/*Adv Scheduler 관련*/
 	int nice;
 	int recent_cpu;
