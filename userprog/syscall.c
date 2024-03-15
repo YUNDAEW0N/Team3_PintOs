@@ -53,15 +53,98 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	
-	// ASSERT(check_address());
+    // bool success;
+    // int sysc_num;
+    // int file_desc;
+    // struct pid_t child_pid;
+    // struct thread *t_child;
+    
+	// ASSERT(is_user_vaddr(f->rsp));
+	// ASSERT(is_user_vaddr(f->R.rbp));
 
-	// ASSERT(is_user_vaddr(ptov(f->R.rsi)));
+    // switch(f->R.rax){
+    //     case 0:
+    //         halt ();
+    //         power_off();                        // 웬만하면 사용되선 안된다.
+    //     case 1:
+    //         exit (int stats);
+    //         printf ("%s: exit(%d)\n", stats);
+    //     case 2:
+    //         child_pid = fork (const char *thread_name);
+    //     case 3:
+    //         file_desc = exec (const char *file);
+    //     case 4:
+    //         wait (pid_t pid);
+    //     case 5:
+    //         create (const char *file, unsigned initial_size);
+    //     case 6:
+    //         remove (const char *file);
+    //     case 7:
+    //         open (const char *file);
+    //     case 8:
+    //         filesize (int fd);
+    //     case 9:
+    //         read (int fd, void *buffer, unsigned size);
+    //     case 10:
+    //         write (int fd, const void *buffer, unsigned size);
+    //     case 11:
+    //         seek (int fd, unsigned position);
+    //     case 12:
+    //         tell (int fd);
+    //     case 13:
+    //         close (int fd);
+        
+    //     default:
+    // }
+
+
+    // // printf("---------------체크용----------------\n");
+    // printf("%d\n", f->R.rax);
+    // printf("-----------------끝------------------\n");
+    
+	// ASSERT(check_address());
+	printf("---------------체크용----------------\n");
+	// printf("%x, %x\n", f->rsp, ptov(f->rsp));
+    printf("Registers:\n");
+    printf("RSI: %x, %s\n", f->R.rsi, f->R.rsi);
+    printf("RDI: %x\n", f->R.rdi);
+    printf("RBP: 0x%x\n", f->R.rbp);
+    printf("RDX: %d\n", f->R.rdx);
+    printf("R10: %d\n", f->R.r10);
+    printf("RBX: 0x%x\n", f->R.rbx);
+    printf("RAX: %d\n", f->R.rax);
+
+    // Print interrupt vector number
+    printf("Interrupt vector number: %d\n", f->vec_no);
+
+    // Print error code
+    printf("Error code: 0x%x\n", f->error_code);
+
+    // Print instruction pointer
+    printf("Instruction pointer: 0x%x\n", f->rip);
+
+    // Print code segment selector
+    printf("Code segment selector: 0x%x\n", f->cs);
+
+    // Print flags register
+    printf("Flags register: 0x%x\n", f->eflags);
+
+    // Print stack pointer
+    printf("Stack pointer: 0x%x\n", f->rsp);
+
+    // Print stack segment selector
+    printf("Stack segment selector: 0x%x\n", f->ss);
+	printf("-------------------end---------------\n");
+
 	// if (is_user_vaddr(ptov(f->R.rsi)) == false){
 	// 	printf("%x\n, %x\n, %c\n", ptov(f->R.rsi), f->R.rsi +1, f->R.rsi - 1);
 	// 	thread_exit();
 		
 	// }
+	// printf("------------syscall_handler-------------\n");
+	hex_dump(f->rsp, f->rsp, USER_STACK - f->rsp, true);
+	// printf("-------------------end------------------\n");
+    
 
 	printf ("system call!\n");
 
@@ -71,3 +154,45 @@ syscall_handler (struct intr_frame *f UNUSED) {
 // bool check_address(char* addr){
 
 // }
+
+/* syscall Debugging */
+/* 
+   printf("Registers:\n");
+    printf("R15: 0x%x\n", f->R.r15);
+    printf("R14: 0x%x\n", f->R.r14);
+    printf("R13: 0x%x\n", f->R.r13);
+    printf("R12: 0x%x\n", f->R.r12);
+    printf("R11: 0x%x\n", f->R.r11);
+    printf("R10: 0x%x\n", f->R.r10);
+    printf("R9: 0x%x\n", f->R.r9);
+    printf("R8: 0x%x\n", f->R.r8);
+    printf("RSI: 0x%x\n", f->R.rsi);
+    printf("RDI: 0x%x\n", f->R.rdi);
+    printf("RBP: 0x%x\n", f->R.rbp);
+    printf("RDX: 0x%x\n", f->R.rdx);
+    printf("RCX: 0x%x\n", f->R.rcx);
+    printf("RBX: 0x%x\n", f->R.rbx);
+    printf("RAX: 0x%x\n", f->R.rax);
+
+    // Print interrupt vector number
+    printf("Interrupt vector number: %d\n", f->vec_no);
+
+    // Print error code
+    printf("Error code: 0x%x\n", f->error_code);
+
+    // Print instruction pointer
+    printf("Instruction pointer: 0x%x\n", f->rip);
+
+    // Print code segment selector
+    printf("Code segment selector: 0x%x\n", f->cs);
+
+    // Print flags register
+    printf("Flags register: 0x%x\n", f->eflags);
+
+    // Print stack pointer
+    printf("Stack pointer: 0x%x\n", f->rsp);
+
+    // Print stack segment selector
+    printf("Stack segment selector: 0x%x\n", f->ss);
+
+*/

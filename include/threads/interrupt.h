@@ -22,16 +22,16 @@ struct gp_registers {
 	uint64_t r13;
 	uint64_t r12;
 	uint64_t r11;
-	uint64_t r10;
+	uint64_t r10;				// 핀토스에서의 네번째 인수(arg)의 값
 	uint64_t r9;
 	uint64_t r8;
-	uint64_t rsi;
-	uint64_t rdi;
-	uint64_t rbp;
-	uint64_t rdx;
-	uint64_t rcx;
-	uint64_t rbx;
-	uint64_t rax;
+	uint64_t rsi;				// 첫번째 인수(arg)의 값
+	uint64_t rdi;				// 두번째 인수(arg)의 값
+	uint64_t rbp;				// Base Pointer, 스택 프레임의 시작 주소
+	uint64_t rdx;				// 세번째 인수(arg)의 값
+	uint64_t rcx;				// 네번째 인수(arg)의 값 // 핀토스에서는 아님
+	uint64_t rbx;				// Base Register, 주로 메모리 주소를 가르킴
+	uint64_t rax;				// 함수 호출 후 반환값 저장
 } __attribute__((packed));
 
 struct intr_frame {
@@ -49,16 +49,16 @@ struct intr_frame {
 /* Sometimes pushed by the CPU,
    otherwise for consistency pushed as 0 by intrNN_stub.
    The CPU puts it just under `eip', but we move it here. */
-	uint64_t error_code;
+	uint64_t error_code;		// 에러코드, 인터럽트의 발생 원인
 /* Pushed by the CPU.
    These are the interrupted task's saved registers. */
-	uintptr_t rip;
-	uint16_t cs;
+	uintptr_t rip;				// Instruction pointer, 다음으로 실행된 명령어의 주소
+	uint16_t cs;				// 코드 세그먼트의 선택자, 현재 실행 중인 코드 세그먼트를 식별
 	uint16_t __pad5;
 	uint32_t __pad6;
-	uint64_t eflags;
-	uintptr_t rsp;
-	uint16_t ss;
+	uint64_t eflags;			// 다양한 상태와 제어 플래그를 저장
+	uintptr_t rsp;				// 스택 포인터로, 현재 스택 상단의 주소
+	uint16_t ss;				// 스택 세그먼트 선택자, 현재 사용되는 스택 세그먼트를 식별
 	uint16_t __pad7;
 	uint32_t __pad8;
 } __attribute__((packed));

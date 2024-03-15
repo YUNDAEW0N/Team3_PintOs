@@ -198,9 +198,7 @@ process_exec (void *f_name) {
 
 	char arg_cnt = 1; 							// 스트링이 두 덩어리라면, 띄어쓰기는 한 개이므로 +1
 	char* save_ptr;								// strtok()용 save_ptr;
-	char *arg_list[arg_cnt];					// 메모리는 블록의 덩어리이므로, 문자열 리스트에 담는다.
 	int total_cnt = 0;							// character 갯수 세기용
-	int64_t arg_addr_list[arg_cnt];				// 리스트는 포인터이므로, 리스트의 원소를 가르킬 주소를 담을 리스트 선언
 
 
 	// Stack에 넣기전, arguments passing
@@ -210,18 +208,29 @@ process_exec (void *f_name) {
 		}
 	}
 
+	char *arg_list[arg_cnt];					// 메모리는 블록의 덩어리이므로, 문자열 리스트에 담는다.
+	int64_t *arg_addr_list[arg_cnt];				// 리스트는 포인터이므로, 리스트의 원소를 가르킬 주소를 담을 리스트 선언
+
 	for(int i = 0; i < arg_cnt; i++){
 		arg_list[i] = strtok_r((i == 0) ? file_name : NULL, " ", &save_ptr);	// 스택의 0번째는 파일 이름이므로.
+		// printf("len: %s\n",arg_list[i]);
+		// printf("i:%d\n",i);
 	}
 
 	// 메모리 스택 영역이므로 rsp의 값을 낮추고, arg_list에 담긴 char형 데이터를 통째로 넣어준다.
 	for(int i = arg_cnt - 1; i >= 0; i--){
-		int len = strlen(arg_list[i]) + 1;		// 문자열의 끝은 '\0'(NULL)로 끝나야 하는데, 지금은 아님. 고로 +1
-		_if.rsp -= len;
-		// args_single(v)onearg이므로 +1
-		total_cnt += len;
-		strlcpy(_if.rsp, arg_list[i], len);		// string 형이기 때문에 strlcpy
-		arg_addr_list[i] = _if.rsp;				// rsp가 list의 시작주소이므로 arg_addr_list에 담는다.
+		// 문자열의 끝은 '\0'(NULL)로 끝나야 하는데, 지금은 아님. 고로 +1
+		_if.rsp -= strlen(arg_list[i]) + 1; 			// args_single(v)onearg이므로 +1
+		total_cnt += strlen(arg_list[i]) + 1;
+		// printf("i: %d\n", i);
+		// printf("str: %s\n", arg_list[i]);
+		strlcpy(_if.rsp, arg_list[i], strlen(arg_list[i]) + 1);		// string 형이기 때문에 strlcpy
+		arg_addr_list[i] = _if.rsp;						// rsp가 list의 시작주소이므로 arg_addr_list에 담는다.
+		
+		// printf("addr_list: %d\n", arg_addr_list[i]);
+		// // printf("total_cnt: %d\n",total_cnt);
+		// // printf("addr: %x\n",arg_addr_list[i]);
+		// printf("========================\n");
 	}
 
 	// word size는 8바이트이기 때문에, 8의 배수가 아니라면 패딩해준다.
@@ -251,7 +260,9 @@ process_exec (void *f_name) {
 	if (!success)
 		return -1;
 
-	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
+	// printf("------------process_exec-------------\n");
+	// hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
+	// printf("------------------end----------------\n");
 
 	/* Start switched process. */
 	do_iret (&_if);
