@@ -48,7 +48,6 @@ process_create_initd (const char *file_name) {
 	char *fn_copy, *token, *save_ptr;
 	tid_t tid;
 	
-
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
 
@@ -194,11 +193,16 @@ process_exec (void *f_name) {
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
+	/* arguments passing 시작 */
+	ASSERT(success);							// 혹시 모르잖아
 
 	char arg_cnt = 1; 							// 스트링이 두 덩어리라면, 띄어쓰기는 한 개이므로 +1
 	char* save_ptr;								// strtok()용 save_ptr;
+	char *arg_list[arg_cnt];					// 메모리는 블록의 덩어리이므로, 문자열 리스트에 담는다.
 	int total_cnt = 0;							// character 갯수 세기용
-	
+	int64_t arg_addr_list[arg_cnt];				// 리스트는 포인터이므로, 리스트의 원소를 가르킬 주소를 담을 리스트 선언
+
+
 	// Stack에 넣기전, arguments passing
 	for(int i = 0; i < strlen(file_name); i++){
 		if(file_name[i] == ' '){
@@ -206,18 +210,15 @@ process_exec (void *f_name) {
 		}
 	}
 
-	char *arg_list[arg_cnt];					// 메모리는 블록의 덩어리이므로, 문자열 리스트에 담는다.
-	int64_t arg_addr_list[arg_cnt];				// 리스트는 포인터이므로, 리스트의 원소를 가르킬 주소를 담을 리스트 선언
-
 	for(int i = 0; i < arg_cnt; i++){
 		arg_list[i] = strtok_r((i == 0) ? file_name : NULL, " ", &save_ptr);	// 스택의 0번째는 파일 이름이므로.
 	}
 
 	// 메모리 스택 영역이므로 rsp의 값을 낮추고, arg_list에 담긴 char형 데이터를 통째로 넣어준다.
 	for(int i = arg_cnt - 1; i >= 0; i--){
-		int len = strlen(arg_list[i]) + 1;		
+		int len = strlen(arg_list[i]) + 1;		// 문자열의 끝은 '\0'(NULL)로 끝나야 하는데, 지금은 아님. 고로 +1
 		_if.rsp -= len;
-		// args_single(v)onearg(v)이므로 +1
+		// args_single(v)onearg이므로 +1
 		total_cnt += len;
 		strlcpy(_if.rsp, arg_list[i], len);		// string 형이기 때문에 strlcpy
 		arg_addr_list[i] = _if.rsp;				// rsp가 list의 시작주소이므로 arg_addr_list에 담는다.
@@ -230,7 +231,9 @@ process_exec (void *f_name) {
 	}
 
 	_if.rsp -= 8;								// 마지막은 0(NULL)
-	memset(_if.rsp, 0, 8);						// 0으로 채워준다.
+	memset(_if.rsp, 0, 8);						
+	/* 대부분의 시스템에서 메모리 할당된 영역은 초기화를 시켜준다.
+	그러나 명시적으로 초기화하는 것이 좋다.*/
 
 	for(int i = arg_cnt - 1; i >= 0 ; i--){		// 각 데이터의 주소를 담아준다.
 		_if.rsp -= 8;
@@ -269,17 +272,26 @@ process_exec (void *f_name) {
  *
  * This function will be implemented in problem 2-2.  For now, it
  * does nothing. */
+
+/* 스레드 TID가 종료되기를 기다리고 종료 상태를 반환합니다.
+
+커널에 의해 (예를 들어 예외로 인해 종료된 경우) 종료되었을 경우 -1을 반환합니다.
+TID가 잘못되었거나 호출하는 프로세스의 자식이 아니었거나,
+주어진 TID에 대해 이미 process_wait()가 성공적으로 호출되었을 경우,
+대기하지 않고 즉시 -1을 반환합니다.
+이 함수는 문제 2-2에서 구현될 예정입니다.
+현재는 아무 작업도 수행하지 않습니다. */
 int
 process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 
-	while(1){					// 이거 안하면 안돌아감 위 주석 참고
+	// while(1){					// 이거 안하면 안돌아감 위 주석 참고
 
-	}
+	// }
+	timer_sleep(1);					// 이거 하면 꺼지긴 함 근데 잘 몰라
 
-	return -1;
 }
 
 /* Exit the process. This function is called by thread_exit (). */

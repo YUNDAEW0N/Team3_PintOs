@@ -94,7 +94,6 @@ file_read_at (struct file *file, void *buffer, off_t size, off_t file_ofs) {
  * not yet implemented.)
  * Advances FILE's position by the number of bytes read. */
 
-
 /* BUFFER에서 FILE로부터 현재 위치부터 SIZE 바이트를 씁니다.
 실제로 쓰여진 바이트 수를 반환합니다.
 파일의 끝에 도달하면 SIZE보다 적을 수 있습니다.

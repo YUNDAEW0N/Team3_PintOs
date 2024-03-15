@@ -31,16 +31,25 @@ static __inline int64_t syscall (uint64_t num_, uint64_t a1_, uint64_t a2_,
 
 /* Invokes syscall NUMBER, passing no arguments, and returns the
    return value as an `int'. */
+
+/* 인수를 전달하지 않고 시스템 콜 번호 NUMBER를 호출하고,
+ 반환값을 'int'로 반환합니다. */
 #define syscall0(NUMBER) ( \
 		syscall(((uint64_t) NUMBER), 0, 0, 0, 0, 0, 0))
 
 /* Invokes syscall NUMBER, passing argument ARG0, and returns the
    return value as an `int'. */
+
+/* 시스템 콜 번호 NUMBER를 호출하고,
+ 인수 ARG0를 전달하여 반환값을 'int'로 반환합니다. */
 #define syscall1(NUMBER, ARG0) ( \
 		syscall(((uint64_t) NUMBER), \
 			((uint64_t) ARG0), 0, 0, 0, 0, 0))
 /* Invokes syscall NUMBER, passing arguments ARG0 and ARG1, and
    returns the return value as an `int'. */
+
+/* 인수 ARG0 및 ARG1을 전달하여 시스템 콜 번호 NUMBER를 호출하고,
+ 반환값을 'int'로 반환합니다. */
 #define syscall2(NUMBER, ARG0, ARG1) ( \
 		syscall(((uint64_t) NUMBER), \
 			((uint64_t) ARG0), \
