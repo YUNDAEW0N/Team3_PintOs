@@ -289,6 +289,12 @@ bitmap_scan (const struct bitmap *b, size_t start, size_t cnt, bool value) {
    If CNT is zero, returns 0.
    Bits are set atomically, but testing bits is not atomic with
    setting them. */
+
+/* B에서 START 이후에 있는 값이 모두 VALUE로 설정된 CNT 연속 비트 그룹을 찾고, 
+해당 비트를 모두 !VALUE로 뒤집은 후 첫 번째 비트의 인덱스를 반환합니다.
+그러한 그룹이 없는 경우 BITMAP_ERROR를 반환합니다.
+CNT가 0 인 경우 0을 반환합니다.
+비트는 원자적으로 설정되지만, 비트를 테스트하는 것은 설정하는 것과 원자적으로 이루어지지 않습니다. */
 size_t
 bitmap_scan_and_flip (struct bitmap *b, size_t start, size_t cnt, bool value) {
 	size_t idx = bitmap_scan (b, start, cnt, value);
