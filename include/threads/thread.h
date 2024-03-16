@@ -91,6 +91,7 @@ struct thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
+	
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 	struct list_elem all_elem;
@@ -98,6 +99,11 @@ struct thread {
 	struct list lock_list;
 	int nice;
 	int32_t recent_cpu;
+	
+	/* Project 2-2 */
+	// struct semaphore wait;			/* 대기를 위한 세마포어 */
+	bool done;							/* 종료 상태를 나타내는 필드 */
+	bool file_loaded;					/* 파일 로드 성공했는가 */
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

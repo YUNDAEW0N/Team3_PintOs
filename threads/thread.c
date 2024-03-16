@@ -202,9 +202,11 @@ thread_init (void) {
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
 	init_thread (initial_thread, "main", PRI_DEFAULT);
-	initial_thread->recent_cpu = 0;
 	initial_thread->status = THREAD_RUNNING;
 	initial_thread->tid = allocate_tid ();
+	initial_thread->recent_cpu = 0;							//
+	// initial_thread->wait.value = 0;							//
+	initial_thread->done, initial_thread->file_loaded = 0;	//
 	is_init = 1;
 	list_push_back(&all_list,&initial_thread->all_elem);
 }
@@ -284,25 +286,31 @@ tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
 	struct thread *t;
+	// struct kernel_thread_frame *kf;
 	tid_t tid;
 
 	ASSERT (function != NULL);
 
 	/* Allocate thread. */
-	t = palloc_get_page (PAL_ZERO);
+	t = palloc_get_page (PAL_ZERO);				// allocating one page
 	if (t == NULL)
 		return TID_ERROR;
 
 	/* Initialize thread. */
-	init_thread (t, name, priority);
-	tid = t->tid = allocate_tid ();
+	init_thread (t, name, priority);			// initialize thread structure
+	tid = t->tid = allocate_tid ();				// allocate tid
 
+	/* Stack frame for kernel_thread() */
+	// kf = alloc_frame (t, sizeof kf);			// allocate
+	// kf->eip = NULL;
+	// kf->function = function;
+	// kf->aux = aux;							// parameters for the function to run
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
 	t->tf.rip = (uintptr_t) kernel_thread;
 	t->tf.R.rdi = (uint64_t) function;
-	t->tf.R.rsi = (uint64_t) aux; 							// fn_copy가 저장된다. args-single
+	t->tf.R.rsi = (uint64_t) aux; 				// fn_copy가 저장된다. args-single
 	t->tf.ds = SEL_KDSEG;
 	t->tf.es = SEL_KDSEG;
 	t->tf.ss = SEL_KDSEG;

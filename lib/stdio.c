@@ -21,8 +21,15 @@ static void vsnprintf_helper (char, void *);
    BUF_SIZE is zero.  Returns the number of characters that would
    have been written to BUFFER, not including a null terminator,
    had there been enough room. */
-int
-vsnprintf (char *buffer, size_t buf_size, const char *format, va_list args) {
+
+/*
+"vprintf()와 비슷하지만, 출력이 BUFFER에 저장됩니다.
+BUFFER는 BUF_SIZE 문자의 공간이 있어야 합니다.
+최대 BUF_SIZE - 1 문자를 BUFFER에 씁니다.
+그 뒤에 널 종결자가 옵니다. BUF_SIZE가 0이 아닌 한 BUFFER는 항상 널 종결됩니다.
+충분한 공간이 있었다면 널 종결자를 제외한 BUFFER에 쓰여진 문자의 수를 반환합니다."
+*/
+int vsnprintf (char *buffer, size_t buf_size, const char *format, va_list args) {
 	/* Set up aux data for vsnprintf_helper(). */
 	struct vsnprintf_aux aux;
 	aux.p = buffer;

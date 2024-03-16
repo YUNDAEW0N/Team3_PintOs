@@ -86,6 +86,11 @@ halt (void) {
 void
 exit (int status) {
 	syscall1 (SYS_EXIT, status);
+	// struct thread *curr = thread_current();
+
+	// /* Save exit status at process descriptor */
+	// printf("%s: exit(%d)\n", curr->name, status);
+
 	NOT_REACHED ();
 }
 
@@ -94,13 +99,51 @@ fork (const char *thread_name){
 	return (pid_t) syscall1 (SYS_FORK, thread_name);
 }
 
+/*
+cmd_line을 실행하는 프로그램을 실행합니다.
+스레드를 생성하고 실행합니다. pintos의 exec()는 Unix의 fork()+exec()와 동등합니다.
+실행될 프로그램에 전달할 인수를 전달합니다.
+새로운 자식 프로세스의 pid를 반환합니다.
+프로그램을 로드하거나 프로세스를 생성하는 데 실패하면 -1을 반환합니다.
+exec을 호출하는 부모 프로세스는 자식 프로세스가 생성되고 실행 파일이 완전히 로드될 때까지 기다려야 합니다.
+*/
 int
-exec (const char *file) {
-	return (pid_t) syscall1 (SYS_EXEC, file);
+ exec (const char *file) {
+	// char* save_ptr;
+	// char* file_name = strtok_r(file, " ", &save_ptr);
+	
+	// ASSERT(file_name != NULL);
+	// if(file_name == NULL){
+	// 	return -1;
+	// }
+
+	return (pid_t) syscall1 (SYS_EXEC, file);		// ,file_name
 }
 
-int
-wait (pid_t pid) {
+/* 
+Wait for a child process pid to exit and retrieve the childs's exit status
+If pid is alive, wait till it terminates, Returns the status that pid passed to exit.
+If pid did not call exit, but was terminated by kernel, return -1
+A parent process can call wait for the child process that the terminated.
+- return exit status of the terminated child process.
+After the child terminates, the parent should deallocate its process descriptor
+wait fails and return -1 if
+- pid does not refer to a direct child of the calling process.
+- The process that calls wait has already called wait on pid.
+*/
+
+/* 
+* 자식 프로세스 pid가 종료될 때까지 기다렸다가 자식 프로세스의 종료 상태를 가져옵니다.
+* 만약 pid가 살아 있다면 종료될 때까지 기다립니다. 자식 프로세스가 exit에 전달한 상태를 반환합니다.
+* 만약 pid가 exit을 호출하지 않았지만 커널에 의해 종료된 경우 -1을 반환합니다.
+* 부모 프로세스는 종료된 자식 프로세스를 대상으로 wait을 호출할 수 있습니다.
+- 종료된 자식 프로세스의 종료 상태를 반환합니다.
+* (중요)자식이 종료되면 부모는 그 프로세스의 프로세스 디스크립터를 해제해야 합니다.
+* wait이 실패하고 -1을 반환하는 경우는 다음과 같습니다:
+- pid가 호출하는 프로세스의 직접적인 자식을 가리키지 않는 경우.
+- wait을 호출한 프로세스가 이미 pid에 대해 wait을 호출한 경우.
+*/
+int wait (pid_t pid) {
 	return syscall1 (SYS_WAIT, pid);
 }
 
@@ -131,6 +174,7 @@ read (int fd, void *buffer, unsigned size) {
 
 int
 write (int fd, const void *buffer, unsigned size) {
+
 	return syscall3 (SYS_WRITE, fd, buffer, size);
 }
 
