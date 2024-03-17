@@ -53,103 +53,112 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-    // bool success;
-    // int sysc_num;
-    // int file_desc;
+    /*
+    시스템 콜 핸들러를 사용하여 시스템 콜을 호출합니다. 시스템 콜 번호를 사용합니다.
+    매개변수 목록 내 포인터(주소)의 유효성을 확인합니다.
+    이 포인터들은 커널 영역이 아닌 사용자 영역을 가리켜야 합니다.
+    이 포인터들이 유효한 주소를 가리키지 않으면 페이지 오류가 발생합니다.
+    사용자 스택에 있는 인수들을 커널로 복사합니다.
+    시스템 콜의 반환 값은 eax 레지스터에 저장됩니다.
+    */
+
+    bool success;
+    int sysc_num;
+    int file_desc;
     // struct pid_t child_pid;
-    // struct thread *t_child;
+    struct thread *t_child;
     
-	// ASSERT(is_user_vaddr(f->rsp));
-	// ASSERT(is_user_vaddr(f->R.rbp));
+	ASSERT(is_user_vaddr(f->rsp));                       // must point the user area
+	ASSERT(is_user_vaddr(f->R.rbp));
+  
+    switch(f->R.rax){
+        /* Shut down pintos */
+        case SYS_HALT:     
+            halt ();
+            break;
 
-    // switch(f->R.rax){
-    //     case 0:
-    //         halt ();
-    //         power_off();                        // 웬만하면 사용되선 안된다.
-    //     case 1:
-    //         exit (int stats);
-    //         printf ("%s: exit(%d)\n", stats);
-    //     case 2:
-    //         child_pid = fork (const char *thread_name);
-    //     case 3:
-    //         file_desc = exec (const char *file);
-    //     case 4:
-    //         wait (pid_t pid);
-    //     case 5:
-    //         create (const char *file, unsigned initial_size);
-    //     case 6:
-    //         remove (const char *file);
-    //     case 7:
-    //         open (const char *file);
-    //     case 8:
-    //         filesize (int fd);
-    //     case 9:
-    //         read (int fd, void *buffer, unsigned size);
-    //     case 10:
-    //         write (int fd, const void *buffer, unsigned size);
-    //     case 11:
-    //         seek (int fd, unsigned position);
-    //     case 12:
-    //         tell (int fd);
-    //     case 13:
-    //         close (int fd);
+        case SYS_EXIT:       
+        // /* Exit process */
+        //     printf ("%s: exit(%d)\n",thread_current()->name ,thread_current()->status);
+        //     exit (int stats);
+        //     break;
+            exit(f->R.rdi);
+            break;
+        case SYS_FORK:
+        /* Create child process and execute program corrensponds to cmd_line on it */
+            // child_pid = fork (const char *thread_name);
+
+        case SYS_EXEC:                                    // is not exec in unix, exec in pintos is fork() + exec()
+            // file_desc = exec (const char *file);
+
+        case SYS_WAIT:
+        /* Wait for termination of child process whose process id is pid */
+            // wait (pid_t pid);
+
+        case SYS_CREATE:
+            // create (const char *file, unsigned initial_size);
+
+        case SYS_REMOVE:
+            // remove (const char *file);
+
+        case SYS_OPEN:
+            // open (const char *file);
+
+        case SYS_FILESIZE:
+            // filesize (int fd);
+
+        case SYS_READ:
+            // read (int fd, void *buffer, unsigned size);
+
+        case SYS_WRITE:
+            write (f->R.rdi, f->R.rsi, f->R.rdx);
+            break;
+
+        case SYS_SEEK:
+            // seek (int fd, unsigned position);
+
+        case SYS_TELL:
+            // tell (int fd);
+
+        case SYS_CLOSE:
+            // close (int fd);
         
-    //     default:
-    // }
+        default:
+            break;
+    }
 
-
-    // // printf("---------------체크용----------------\n");
-    // printf("%d\n", f->R.rax);
-    // printf("-----------------끝------------------\n");
-    
-	// ASSERT(check_address());
-	printf("---------------체크용----------------\n");
-	// printf("%x, %x\n", f->rsp, ptov(f->rsp));
-    printf("Registers:\n");
-    printf("RSI: %x, %s\n", f->R.rsi, f->R.rsi);
-    printf("RDI: %x\n", f->R.rdi);
-    printf("RBP: 0x%x\n", f->R.rbp);
-    printf("RDX: %d\n", f->R.rdx);
-    printf("R10: %d\n", f->R.r10);
-    printf("RBX: 0x%x\n", f->R.rbx);
-    printf("RAX: %d\n", f->R.rax);
-
-    // Print interrupt vector number
-    printf("Interrupt vector number: %d\n", f->vec_no);
-
-    // Print error code
-    printf("Error code: 0x%x\n", f->error_code);
-
-    // Print instruction pointer
-    printf("Instruction pointer: 0x%x\n", f->rip);
-
-    // Print code segment selector
-    printf("Code segment selector: 0x%x\n", f->cs);
-
-    // Print flags register
-    printf("Flags register: 0x%x\n", f->eflags);
-
-    // Print stack pointer
-    printf("Stack pointer: 0x%x\n", f->rsp);
-
-    // Print stack segment selector
-    printf("Stack segment selector: 0x%x\n", f->ss);
-	printf("-------------------end---------------\n");
-
-	// if (is_user_vaddr(ptov(f->R.rsi)) == false){
-	// 	printf("%x\n, %x\n, %c\n", ptov(f->R.rsi), f->R.rsi +1, f->R.rsi - 1);
-	// 	thread_exit();
-		
-	// }
-	// printf("------------syscall_handler-------------\n");
-	hex_dump(f->rsp, f->rsp, USER_STACK - f->rsp, true);
-	// printf("-------------------end------------------\n");
-    
-
-	printf ("system call!\n");
-
-	thread_exit ();
 }
+
+void halt (void){                                           //
+    printf ("%s: exit(%d)\n",thread_current()->name ,thread_current()->status);
+    power_off();                                            // 웬만하면 사용되선 안된다.
+}
+void exit (int status){                                     //
+    printf ("%s: exit(%d)\n",thread_current()->name ,status);
+    thread_exit();
+}
+pid_t fork (const char *thread_name);
+int exec (const char *file);
+int wait (pid_t);
+bool create (const char *file, unsigned initial_size);
+bool remove (const char *file);
+int open (const char *file);
+int filesize (int fd);
+int read (int fd, void *buffer, unsigned length);
+int write (int fd, const void *buffer, unsigned length){    //
+
+    putbuf(buffer, length);
+    // printf("-----------------------------------\n");
+    // printf("before : %d, %s, %d\n", fd, buffer, length);
+
+    // printf("after : %d, 0x%x, %d\n", fd, ptov(buffer), length);
+    // printf("-----------------------------------\n");
+}
+void seek (int fd, unsigned position);
+unsigned tell (int fd);
+void close (int fd);
+
+int dup2(int oldfd, int newfd);
 
 // bool check_address(char* addr){
 

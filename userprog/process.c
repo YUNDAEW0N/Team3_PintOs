@@ -63,6 +63,7 @@ process_create_initd (const char *file_name) {
 	/* Create a new thread to execute FILE_NAME. */
 	// tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
+
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -175,6 +176,7 @@ int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
+	tid_t tid;									//
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -192,14 +194,11 @@ process_exec (void *f_name) {
 
 	/* And then load the binary */
 	success = load (file_name, &_if);
-
+	
 	/* arguments passing 시작 */
-	ASSERT(success);							// 혹시 모르잖아
-
 	char arg_cnt = 1; 							// 스트링이 두 덩어리라면, 띄어쓰기는 한 개이므로 +1
 	char* save_ptr;								// strtok()용 save_ptr;
 	int total_cnt = 0;							// character 갯수 세기용
-
 
 	// Stack에 넣기전, arguments passing
 	for(int i = 0; i < strlen(file_name); i++){
@@ -213,8 +212,7 @@ process_exec (void *f_name) {
 
 	for(int i = 0; i < arg_cnt; i++){
 		arg_list[i] = strtok_r((i == 0) ? file_name : NULL, " ", &save_ptr);	// 스택의 0번째는 파일 이름이므로.
-		// printf("len: %s\n",arg_list[i]);
-		// printf("i:%d\n",i);
+
 	}
 
 	// 메모리 스택 영역이므로 rsp의 값을 낮추고, arg_list에 담긴 char형 데이터를 통째로 넣어준다.
@@ -222,15 +220,9 @@ process_exec (void *f_name) {
 		// 문자열의 끝은 '\0'(NULL)로 끝나야 하는데, 지금은 아님. 고로 +1
 		_if.rsp -= strlen(arg_list[i]) + 1; 			// args_single(v)onearg이므로 +1
 		total_cnt += strlen(arg_list[i]) + 1;
-		// printf("i: %d\n", i);
-		// printf("str: %s\n", arg_list[i]);
+
 		strlcpy(_if.rsp, arg_list[i], strlen(arg_list[i]) + 1);		// string 형이기 때문에 strlcpy
 		arg_addr_list[i] = _if.rsp;						// rsp가 list의 시작주소이므로 arg_addr_list에 담는다.
-		
-		// printf("addr_list: %d\n", arg_addr_list[i]);
-		// // printf("total_cnt: %d\n",total_cnt);
-		// // printf("addr: %x\n",arg_addr_list[i]);
-		// printf("========================\n");
 	}
 
 	// word size는 8바이트이기 때문에, 8의 배수가 아니라면 패딩해준다.
@@ -260,6 +252,8 @@ process_exec (void *f_name) {
 	if (!success)
 		return -1;
 
+	// tid = thread_create(file_name, PRI_DEFAULT, start_process, fn_copy);
+
 	// printf("------------process_exec-------------\n");
 	// hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 	// printf("------------------end----------------\n");
@@ -268,11 +262,6 @@ process_exec (void *f_name) {
 	do_iret (&_if);
 	NOT_REACHED ();
 }
-
-// void mem_padd(uintptr_t *ptr){
-// 	*ptr -= 8;
-// 	memset(ptr, 0, 8);
-// }
 
 /* Waits for thread TID to die and returns its exit status.  If
  * it was terminated by the kernel (i.e. killed due to an
@@ -294,21 +283,28 @@ TID가 잘못되었거나 호출하는 프로세스의 자식이 아니었거나
 현재는 아무 작업도 수행하지 않습니다. */
 int
 process_wait (tid_t child_tid UNUSED) {
-	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
-	 * XXX:       to add infinite loop here before
-	 * XXX:       implementing the process_wait. */
+	/*
+	Search the descriptor of the child process by using child_tid.
+	The caller block until the child process exits.
+	Once child process exits, deallocate the descriptor of child process and
+	return exit status of the child process.
+	*/
 
 	// while(1){					// 이거 안하면 안돌아감 위 주석 참고
 
 	// }
-	timer_sleep(1);					// 이거 하면 꺼지긴 함 근데 잘 몰라
+	timer_sleep(40);					// 이거 하면 꺼지긴 함 근데 잘 몰라
+
+	// sema_down();
+	// wait();
+	// return exit();
 
 }
 
 /* Exit the process. This function is called by thread_exit (). */
 void
 process_exit (void) {
-	struct thread *curr = thread_current ();
+	// struct thread *curr = thread_current ();
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
