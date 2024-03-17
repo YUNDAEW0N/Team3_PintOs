@@ -26,6 +26,19 @@ void fail (const char *, ...) PRINTF_FORMAT (1, 2) NO_RETURN;
      - The message must not have side effects of its own, because
        it will be printed twice on failure, or zero times on
        success if quiet is set. */
+
+/*
+SUCCESS를 테스트하는 표현식과 printf 스타일의 인자를 포함할 수 있는 메시지를 가져옵니다.
+메시지를 기록한 다음 표현식을 테스트합니다.
+이 값이 실패를 나타내는 0이면 메시지를 실패로 출력합니다.
+
+사용하기 다소 까다로운 점:
+SUCCESS는 메시지에 영향을 미치는 부작용이 있어서는 안 됩니다.
+그렇게 되면 원래 메시지와 실패 메시지가 다르게 나타날 수 있습니다.
+메시지 자체가 부작용을 가져서는 안 됩니다.
+왜냐하면 실패 시 메시지가 두 번 출력되거나,
+quiet가 설정된 경우 성공 시 메시지가 전혀 출력되지 않을 수 있기 때문입니다.
+*/
 #define CHECK(SUCCESS, ...)                     \
         do                                      \
           {                                     \

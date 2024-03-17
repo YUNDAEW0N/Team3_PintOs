@@ -25,8 +25,8 @@ struct gp_registers {
 	uint64_t r10;				// 핀토스에서의 네번째 인수(arg)의 값
 	uint64_t r9;
 	uint64_t r8;
-	uint64_t rsi;				// 첫번째 인수(arg)의 값
-	uint64_t rdi;				// 두번째 인수(arg)의 값
+	uint64_t rsi;				// 두번째 인수(arg)의 값
+	uint64_t rdi;				// 첫번째 인수(arg)의 값
 	uint64_t rbp;				// Base Pointer, 스택 프레임의 시작 주소
 	uint64_t rdx;				// 세번째 인수(arg)의 값
 	uint64_t rcx;				// 네번째 인수(arg)의 값 // 핀토스에서는 아님

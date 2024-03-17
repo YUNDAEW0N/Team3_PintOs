@@ -191,6 +191,7 @@ void putbuf(const char *buffer, size_t n)
 }
 
 /* Writes C to the vga display and serial port. */
+/* BUFFER에 있는 N개의 문자를 콘솔에 작성합니다. */
 int putchar(int c)
 {
 	acquire_console();
@@ -212,6 +213,9 @@ vprintf_helper(char c, void *char_cnt_)
 /* Writes C to the vga display and serial port.
    The caller has already acquired the console lock if
    appropriate. */
+
+/* C를 VGA 디스플레이와 직렬 포트에 작성합니다.
+호출자가 적절한 경우 이미 콘솔 락을 획득했습니다. */
 static void
 putchar_have_lock(uint8_t c)
 {
