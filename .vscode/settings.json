@@ -15,6 +15,9 @@
         "malloc.h": "c",
         "lib.h": "c",
         "intrinsic.h": "c",
-        "filesys.h": "c"
+        "filesys.h": "c",
+        "main.h": "c",
+        "inode.h": "c",
+        "gdt.h": "c"
     }
 }

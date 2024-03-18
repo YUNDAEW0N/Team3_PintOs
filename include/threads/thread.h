@@ -99,7 +99,7 @@ struct thread {
 
 	/*file_descriptor*/
 	struct file *fdt[64];
-	int next_fd;
+	int curr_fd;
 
 	/*일어날 시간 tick 추가해야 할듯*/
 	int64_t wakeup_tick;

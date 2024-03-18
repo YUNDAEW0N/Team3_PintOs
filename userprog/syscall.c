@@ -8,6 +8,9 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "filesys/filesys.h"
+#include "filesys/file.h"
+#include "filesys/inode.h"
+#include "devices/input.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -77,10 +80,11 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		f->R.rax = open(f->R.rdi);
 		break;
 	case SYS_FILESIZE:
-		/* code */
+		f->R.rax = filesize(f->R.rdi);
 		break;
 	case SYS_READ:
-		/* code */
+		check_address(f->R.rsi);
+		f->R.rax = read(f->R.rdi,f->R.rsi,f->R.rdx);
 		break;
 	case SYS_WRITE:
 		check_address(f->R.rsi);
@@ -93,7 +97,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		/* code */
 		break;
 	case SYS_CLOSE:
-		/* code */
+		close(f->R.rdi);
 		break;
 	}
 }
@@ -150,15 +154,14 @@ bool remove (const char *file)
 
 }
 
-// int fd = 2;
+
 int open (const char *file)
 {
 	struct thread *curr = thread_current();
-	curr->fdt[curr->next_fd] = filesys_open(file);
+	curr->fdt[curr->curr_fd] = filesys_open(file);
 
 	if (filesys_open(file)) {
-		curr->next_fd++;
-		return curr->next_fd;
+		return curr->curr_fd++;
 	}
 	else {
 		return -1;
@@ -167,12 +170,39 @@ int open (const char *file)
 
 int filesize (int fd)
 {
+	if(fd<0 || fd>64)
+		return;
 
+	struct thread *curr = thread_current();
+	struct file *file = curr->fdt[fd];
+
+	if(file == NULL)
+		return;
+	
+	return file_length(file);
 }
+
 int read (int fd, void *buffer, unsigned length)
 {
+	if(fd<0 || fd>64)
+		return -1;
 
+	struct thread *curr = thread_current();
+	struct file *file = curr->fdt[fd];
+	int file_size=0;
+
+	if (file == NULL)
+		return -1;
+	if (fd == 0)
+		return input_getc();
+	if (fd == 1 || fd == 2)
+		return -1;
+
+
+	file_size = file_read(file,buffer,length);
+	return file_size;
 }
+
 int write (int fd, const void *buffer, unsigned length)
 {
 	putbuf(buffer, length);
@@ -187,7 +217,14 @@ unsigned tell (int fd)
 }
 void close (int fd)
 {
+	if(fd<0 || fd>64)
+		return;
+
+	struct thread *curr = thread_current();
 	
+	if(curr->fdt[fd])
+		file_close(curr->fdt[fd]);
+
 }
 int dup2(int oldfd, int newfd)
 {

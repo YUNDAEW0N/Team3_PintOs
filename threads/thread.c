@@ -633,7 +633,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->recent_cpu = RECENT_CPU_DEFAULT;
 
 	/*file_descriptor*/
-	t->next_fd=2;
+	t->curr_fd=3;
+	memset(t->fdt,0,sizeof(struct file*)*64);
 
 	list_init(&t->child_list);
 	t->parent = NULL;
