@@ -60,7 +60,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		break;
 	case SYS_FORK:
 		//check_address(f->R.rdi);
-		fork(f->R.rdi);
+		// fork(f->R.rdi);
 		break;
 	case SYS_EXEC:
 		/* code */
@@ -73,7 +73,8 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		f->R.rax = create(f->R.rdi,f->R.rsi);
 		break;
 	case SYS_REMOVE:
-		/* code */
+		check_address(f->R.rdi);
+		f->R.rax = remove(f->R.rdi);
 		break;
 	case SYS_OPEN:
 		check_address(f->R.rdi);
@@ -88,7 +89,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		break;
 	case SYS_WRITE:
 		check_address(f->R.rsi);
-		write(f->R.rdi, f->R.rsi,f->R.rdx);
+		f->R.rax = write(f->R.rdi, f->R.rsi,f->R.rdx);
 		break;
 	case SYS_SEEK:
 		/* code */
@@ -121,16 +122,16 @@ void exit (int status)
 // 미완성
 pid_t fork (const char *thread_name)
 {
-	int tid;
+	// int tid;
 
-	tid = process_fork(thread_name);
+	// tid = process_fork(thread_name);
 
-	if (tid > 0)
-		return tid;
-	else if (tid < 0)
-		return -1;
-	else
-		return 0; 
+	// if (tid > 0)
+	// 	return tid;
+	// else if (tid < 0)
+	// 	return -1;
+	// else
+	// 	return 0; 
 }
 int exec (const char *file)
 {
@@ -151,21 +152,22 @@ bool create (const char *file, unsigned initial_size)
 
 bool remove (const char *file)
 {
-
+	if(filesys_remove(file))
+		return true;
+	else
+		return false;
 }
 
 
 int open (const char *file)
 {
 	struct thread *curr = thread_current();
-	curr->fdt[curr->curr_fd] = filesys_open(file);
+	curr->fdt[curr->curr_fd]= filesys_open(file);
 
-	if (filesys_open(file)) {
+	if (curr->fdt[curr->curr_fd])
 		return curr->curr_fd++;
-	}
-	else {
+	else 
 		return -1;
-	}
 }
 
 int filesize (int fd)
@@ -178,7 +180,7 @@ int filesize (int fd)
 
 	if(file == NULL)
 		return;
-	
+
 	return file_length(file);
 }
 
@@ -205,7 +207,19 @@ int read (int fd, void *buffer, unsigned length)
 
 int write (int fd, const void *buffer, unsigned length)
 {
-	putbuf(buffer, length);
+	// putbuf(buffer, length);
+	struct thread *curr = thread_current();
+	struct file *file = curr->fdt[fd];
+
+	if (fd<0 || fd>=64)
+		return -1;
+	else if (fd == 0 || fd == 2)
+		return -1;
+	else if(fd == 1)
+		putbuf(buffer, length);
+	
+	if(file)
+		return file_write(file,buffer,length);
 }
 void seek (int fd, unsigned position)
 {
@@ -217,14 +231,15 @@ unsigned tell (int fd)
 }
 void close (int fd)
 {
-	if(fd<0 || fd>64)
+	if(fd<0 || fd>=64)
 		return;
 
 	struct thread *curr = thread_current();
 	
-	if(curr->fdt[fd])
+	if(curr->fdt[fd]){
 		file_close(curr->fdt[fd]);
-
+		curr->fdt[fd] = NULL;
+	}
 }
 int dup2(int oldfd, int newfd)
 {

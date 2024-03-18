@@ -290,8 +290,9 @@ thread_create (const char *name, int priority,
 	struct thread *cur = thread_current();
 	tid_t tid;
 
-	if ((struct thread *)aux == cur->parent)
-		return 0;
+	//fork할때 추가한건데 이상함
+	// if ((struct thread *)aux == cur->parent)
+	// 	return 0;
 
 	ASSERT (function != NULL);
 
