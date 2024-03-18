@@ -97,6 +97,10 @@ struct thread {
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
 
+	/*file_descriptor*/
+	struct file *fdt[64];
+	int next_fd;
+
 	/*일어날 시간 tick 추가해야 할듯*/
 	int64_t wakeup_tick;
 

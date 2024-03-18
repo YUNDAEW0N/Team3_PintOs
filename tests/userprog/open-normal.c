@@ -9,7 +9,7 @@ void
 test_main (void) 
 {
   int handle = open ("sample.txt");
-  printf("handle: %d\n", handle);
+  // printf("handle: %d\n",handle);
   if (handle < 2)
     fail ("open() returned %d", handle);
 }

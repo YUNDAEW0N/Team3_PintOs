@@ -7,9 +7,12 @@
 #include "userprog/gdt.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
+#include "filesys/filesys.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+
+
 
 /* System call.
  *
@@ -63,14 +66,15 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		/* code */
 		break;
 	case SYS_CREATE:
-		/* code */
+		check_address(f->R.rdi);
+		f->R.rax = create(f->R.rdi,f->R.rsi);
 		break;
 	case SYS_REMOVE:
 		/* code */
 		break;
 	case SYS_OPEN:
 		check_address(f->R.rdi);
-		open(f->R.rdi);
+		f->R.rax = open(f->R.rdi);
 		break;
 	case SYS_FILESIZE:
 		/* code */
@@ -96,7 +100,6 @@ syscall_handler (struct intr_frame *f UNUSED) {
 
 void check_address(void *addr)
 {
-	printf("!!\n");
 	struct thread *cur = thread_current();
 	if (is_kernel_vaddr(addr) || pml4_get_page(cur->pml4, addr) == NULL)
 		exit(-1);
@@ -133,20 +136,29 @@ int wait (pid_t pid)
 {
 
 }
+
 bool create (const char *file, unsigned initial_size)
 {
-
+	if(filesys_create(file,initial_size))
+		return true;
+	else
+		return false;
 }
+
 bool remove (const char *file)
 {
 
 }
 
-int fd = 2;
+// int fd = 2;
 int open (const char *file)
 {
+	struct thread *curr = thread_current();
+	curr->fdt[curr->next_fd] = filesys_open(file);
+
 	if (filesys_open(file)) {
-		return fd++;
+		curr->next_fd++;
+		return curr->next_fd;
 	}
 	else {
 		return -1;
@@ -175,7 +187,7 @@ unsigned tell (int fd)
 }
 void close (int fd)
 {
-
+	
 }
 int dup2(int oldfd, int newfd)
 {
