@@ -26,7 +26,9 @@ bytes_to_sectors (off_t size) {
 	return DIV_ROUND_UP (size, DISK_SECTOR_SIZE);
 }
 
-/* In-memory inode. */
+/* In-memory inode. 아래는 요소들
+list_elem elem, disk_sector_t sector, int open_cnt,
+int deny_write_cnt, struct inode_disk data */
 struct inode {
 	struct list_elem elem;              /* Element in inode list. */
 	disk_sector_t sector;               /* Sector number of disk location. */

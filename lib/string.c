@@ -44,6 +44,10 @@ memmove (void *dst_, const void *src_, size_t size) {
    at A and B.  Returns a positive value if the byte in A is
    greater, a negative value if the byte in B is greater, or zero
    if blocks A and B are equal. */
+
+/* A와 B의 SIZE 바이트 블록에서 첫 번째로 다른 바이트를 찾습니다.
+A의 바이트가 더 큰 경우 양수 값을 반환하고, B의 바이트가 더 큰 경우 음수 값을 반환합니다.
+블록 A와 B가 동일한 경우 0을 반환합니다. */
 int
 memcmp (const void *a_, const void *b_, size_t size) {
 	const unsigned char *a = a_;
@@ -63,6 +67,11 @@ memcmp (const void *a_, const void *b_, size_t size) {
    char) is greater, a negative value if the character in B (as
    an unsigned char) is greater, or zero if strings A and B are
    equal. */
+   
+/* 문자열 A와 B에서 첫 번째로 다른 문자를 찾습니다.
+만약 A의 문자(부호 없는 char로 캐스트된)가 더 크면 양수 값을 반환하고,
+B의 문자(부호 없는 char로 캐스트된)가 더 크면 음수 값을 반환합니다.
+두 문자열 A와 B가 같으면 0을 반환합니다. */
 int
 strcmp (const char *a_, const char *b_) {
 	const unsigned char *a = (const unsigned char *) a_;
@@ -82,6 +91,9 @@ strcmp (const char *a_, const char *b_) {
 /* Returns a pointer to the first occurrence of CH in the first
    SIZE bytes starting at BLOCK.  Returns a null pointer if CH
    does not occur in BLOCK. */
+   
+/* BLOCK에서 시작하여 SIZE 바이트 중 첫 번째로 CH가 발생하는 위치를 가리키는 포인터를 반환합니다.
+CH가 BLOCK에 없는 경우 null 포인터를 반환합니다. */
 void *
 memchr (const void *block_, int ch_, size_t size) {
 	const unsigned char *block = block_;

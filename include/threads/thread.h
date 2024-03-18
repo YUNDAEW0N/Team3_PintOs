@@ -5,10 +5,19 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+
 #ifdef VM
 #include "vm/vm.h"
 #endif
 
+/* file descriptor(project2), 아래는 요소들
+bool open_flag, int fd, int offset, file *file */
+struct file_desc_t {
+	bool open_flag;				/* 파일이 열려있는지, 닫혀있는지를 나타내는 플래그 */
+	int file_desc;				/* 파일을 식별하는 숫자로, 파일을 읽고 쓰기 위해 사용 */
+	struct list_elem elem;
+	struct file *file;			/* 커널 내부에서 파일을 나타내는 구조체, 파일에 대한 메타데이터와  */
+};
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -27,6 +36,9 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
+/* project2 */
+#define MAX_FD_TABLE_SIZE 63
 
 /* A kernel thread or user process.
  *
@@ -104,6 +116,7 @@ struct thread {
 	// struct semaphore wait;			/* 대기를 위한 세마포어 */
 	bool done;							/* 종료 상태를 나타내는 필드 */
 	bool file_loaded;					/* 파일 로드 성공했는가 */
+	struct file_desc_t fdt_list[MAX_FD_TABLE_SIZE];		/* 파일 디스크럽터 테이블 */
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

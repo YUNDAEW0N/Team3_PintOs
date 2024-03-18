@@ -15,6 +15,9 @@ static void do_format (void);
 
 /* Initializes the file system module.
  * If FORMAT is true, reformats the file system. */
+
+/* 파일 시스템 모듈을 초기화합니다.
+FORMAT이 true이면 파일 시스템을 다시 포맷합니다. */
 void
 filesys_init (bool format) {
 	filesys_disk = disk_get (0, 1);
@@ -43,6 +46,8 @@ filesys_init (bool format) {
 
 /* Shuts down the file system module, writing any unwritten data
  * to disk. */
+
+/* 파일 시스템 모듈을 종료하고, 디스크에 기록되지 않은 데이터를 디스크에 씁니다. */
 void
 filesys_done (void) {
 	/* Original FS */
@@ -81,11 +86,14 @@ filesys_create (const char *name, off_t initial_size) {
  * otherwise.
  * Fails if no file named NAME exists,
  * or if an internal memory allocation fails. */
-struct file *
-filesys_open (const char *name) {
+
+/* 주어진 이름(NAME)의 파일을 엽니다.
+성공하면 새 파일을 반환하고, 그렇지 않으면 널 포인터를 반환합니다.
+NAME으로 된 파일이 없거나, 내부 메모리 할당이 실패하는 경우 실패합니다. */
+struct file * filesys_open (const char *name) {
 	struct dir *dir = dir_open_root ();
 	struct inode *inode = NULL;
-
+	// printf("@@@@@@@@@@@@@@\n");
 	if (dir != NULL)
 		dir_lookup (dir, name, &inode);
 	dir_close (dir);
@@ -97,6 +105,10 @@ filesys_open (const char *name) {
  * Returns true if successful, false on failure.
  * Fails if no file named NAME exists,
  * or if an internal memory allocation fails. */
+
+/* 이름이 NAME인 파일을 삭제합니다.
+성공하면 true를 반환하고, 실패하면 false를 반환합니다.
+NAME으로 된 파일이 없거나, 내부 메모리 할당이 실패하는 경우 실패합니다. */
 bool
 filesys_remove (const char *name) {
 	struct dir *dir = dir_open_root ();
