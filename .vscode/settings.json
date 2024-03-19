@@ -18,6 +18,8 @@
         "filesys.h": "c",
         "main.h": "c",
         "inode.h": "c",
-        "gdt.h": "c"
+        "gdt.h": "c",
+        "thread.h": "c",
+        "input.h": "c"
     }
 }

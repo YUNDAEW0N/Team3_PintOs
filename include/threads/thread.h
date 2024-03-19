@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -113,9 +114,13 @@ struct thread {
 	struct lock *wait_on_lock;
 	int origin_priority;
 
+	/* fork 관련 */
+	struct intr_frame parent_if;
 	struct list child_list;
-	struct list_elem c_elem;
+	struct list_elem child_elem;
 	struct thread *parent;
+
+	struct semaphore wait_sema; // init_sema
 	/*Adv Scheduler 관련*/
 	int nice;
 	int recent_cpu;

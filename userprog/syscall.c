@@ -59,11 +59,12 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		exit(f->R.rdi);
 		break;
 	case SYS_FORK:
-		//check_address(f->R.rdi);
-		// fork(f->R.rdi);
+		check_address(f->R.rdi);
+		f->R.rax = fork(f->R.rdi);
 		break;
 	case SYS_EXEC:
-		/* code */
+		check_address(f->R.rdi);
+		f->R.rax = exec(f->R.rdi);
 		break;
 	case SYS_WAIT:
 		/* code */
@@ -92,10 +93,10 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		f->R.rax = write(f->R.rdi, f->R.rsi,f->R.rdx);
 		break;
 	case SYS_SEEK:
-		/* code */
+		seek(f->R.rdi,f->R.rsi);
 		break;
 	case SYS_TELL:
-		/* code */
+		f->R.rax = tell(f->R.rdi);
 		break;
 	case SYS_CLOSE:
 		close(f->R.rdi);
@@ -119,23 +120,19 @@ void exit (int status)
 	printf ("%s: exit(%d)\n",thread_current()->name, status);
 	thread_exit();
 }
-// 미완성
+
 pid_t fork (const char *thread_name)
 {
-	// int tid;
-
-	// tid = process_fork(thread_name);
-
-	// if (tid > 0)
-	// 	return tid;
-	// else if (tid < 0)
-	// 	return -1;
-	// else
-	// 	return 0; 
+	struct thread *parent = thread_current();
+	
+	return process_fork(thread_name,&parent->parent_if);
 }
-int exec (const char *file)
+int exec (const char *cmd_line)
 {
-
+	printf("cmd_line : %s\n", cmd_line);
+	if (process_exec(cmd_line)<0)
+		return -1;
+	NOT_REACHED();
 }
 int wait (pid_t pid)
 {
@@ -223,11 +220,19 @@ int write (int fd, const void *buffer, unsigned length)
 }
 void seek (int fd, unsigned position)
 {
+	if (fd<0 || fd>=0)
+		return;
 
+	struct file *file = thread_current()->fdt[fd];
+	file_seek(file,position);
 }
 unsigned tell (int fd)
 {
+	if (fd<0 || fd>=0)
+		return;
 
+	struct file *file = thread_current()->fdt[fd];
+	return file_tell(file);
 }
 void close (int fd)
 {

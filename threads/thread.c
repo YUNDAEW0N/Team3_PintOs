@@ -316,18 +316,16 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
  
-	if ((struct thread *)aux == cur) {
-		list_push_back(&cur->child_list, &cur->c_elem);
-	}
 	/* Add to run queue. */
 	thread_unblock (t);
 
 	/*현재 쓰레드랑 새로 생성된 쓰레드 우선순위 비교해서
 	새로 생성한 쓰레드 우선순위가 더 높으면 현재 쓰레드가 양보*/
 	struct thread *curr = thread_current();
-	if (t->priority > curr->priority)
+	if (t->priority >= curr->priority)
+	{	
 		thread_yield();
-
+	}
 	return tid;
 }
 
@@ -637,6 +635,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->curr_fd=3;
 	memset(t->fdt,0,sizeof(struct file*)*64);
 
+	/*fork*/
+	sema_init(&t->wait_sema,0);
 	list_init(&t->child_list);
 	t->parent = NULL;
 }

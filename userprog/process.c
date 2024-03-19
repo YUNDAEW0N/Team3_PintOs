@@ -75,10 +75,19 @@ initd (void *f_name) {
 /* Clones the current process as `name`. Returns the new process's thread id, or
  * TID_ERROR if the thread cannot be created. */
 tid_t
-process_fork (const char *name, struct intr_frame *if_ UNUSED) {
+process_fork (const char *name, struct intr_frame *if_ ) {
 	/* Clone current thread to new thread.*/
-	return thread_create (name,
-			PRI_DEFAULT, __do_fork, thread_current ());
+	struct thread *parent =thread_current();
+	struct tid *tid;
+
+	memcpy(&parent->parent_if,if_,sizeof(struct intr_frame *));
+
+	tid =thread_create (name,PRI_DEFAULT, __do_fork, parent);
+	if (tid ==TID_ERROR)
+		return TID_ERROR;
+	sema_down(&parent->wait_sema);
+	return tid;
+	
 }
 
 #ifndef VM
@@ -93,21 +102,29 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	bool writable;
 
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
-
+	if(is_kernel_vaddr(va))
+		return true;
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
 
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
 	 *    TODO: NEWPAGE. */
+			if((newpage = palloc_get_page(PAL_USER | PAL_ZERO)) == NULL){
+				return false;
+			}
 
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). */
+			memcpy(newpage,parent_page,PGSIZE);
+			writable = is_writable(pte);
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
 	 *    permission. */
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
+		palloc_free_page(newpage);
+		return false;
 	}
 	return true;
 }
@@ -124,16 +141,10 @@ __do_fork (void *aux) {
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
-	if (parent == current)
-		parent_if = &current->tf;
-	else {
-		current->parent = parent;
-		return ;
-	}
 	bool succ = true;
 
 	/* 1. Read the cpu context to local stack. */
-	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+	memcpy(&if_, &parent->parent_if, sizeof (struct intr_frame));
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -155,12 +166,27 @@ __do_fork (void *aux) {
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
+	for(int i = 3; i<64 ; i++){
+		if(parent->fdt[i])
+			current->fdt[i]= file_duplicate(parent->fdt[i]);
+	}
+
+	// list_push_back(&parent->child_list,&current->child_elem);
+
+	// printf("###############1\n");
+	sema_up(&parent->wait_sema);
+	// printf("###############2\n");
 
 	process_init ();
+	// printf("###############3\n");
 
 	/* Finally, switch to the newly created process. */
-	if (succ)
+	if (succ){
+		if_.R.rax=0;
+		// printf("############### : %d\n",if_.R.rax);
 		do_iret (&if_);
+	}
+	
 error:
 	thread_exit ();
 }
@@ -171,7 +197,10 @@ int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
-	char * save_ptr;
+	char *save_ptr;
+	int arg_cnt=1;
+	int total_size=0;
+
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -184,31 +213,27 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
-	/* And then load the binary */
-	success = load (file_name, &_if);
-	//printf("_if.rsp :%x\n",_if.rsp);
-	/*-----------------------------------------------------*/
-	int arg_cnt=1;
-	int total_size=0;
-	// printf("before arg_cnt : %d\n", arg_cnt);
-	// printf("file_name len : %d\n",strlen(file_name));
-	// printf("file_name : %s\n",file_name);
+
+
 	for(int i=0;i<strlen(file_name);i++)
 	{
 		if(file_name[i] == ' ' && file_name[i+1]!=' '){
 			arg_cnt++;
 		}
 	}
-	// printf("arg_cnt : %d\n", arg_cnt);
 	char *arg_list[arg_cnt];
-	// arg_list[0] = thread_current()->name;
 	int64_t arg_addr_list[arg_cnt];
 
 	for(int i=0;i<arg_cnt;i++)
 	{
 		arg_list[i] = strtok_r((i == 0) ? file_name : NULL, " ", &save_ptr);
-		// printf("arg_list[%d] : %s\n",i,arg_list[i]);
 	}
+	
+
+	/* And then load the binary */
+	success = load (arg_list[0], &_if);
+
+	/*-----------------------------------------------------*/
 
 	for(int i=arg_cnt-1;i>=0;i--)
 	{
@@ -394,16 +419,19 @@ load (const char *file_name, struct intr_frame *if_) {
 	off_t file_ofs;
 	bool success = false;
 	int i;
+	char *save_ptr, *file_copy;
 
-	/* Allocate and activate page directory. */
+	
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
 		goto done;
-	process_activate (thread_current ());
 
+	
+	process_activate (thread_current ());
+	
 
 	/* Open executable file. */
-	file = filesys_open (thread_current()->name);
+	file = filesys_open (file_name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;

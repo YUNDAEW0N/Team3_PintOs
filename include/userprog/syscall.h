@@ -25,7 +25,7 @@ void syscall_init (void);
 void halt (void) NO_RETURN;
 void exit (int status) NO_RETURN;
 pid_t fork (const char *thread_name);
-int exec (const char *file);
+int exec (const char *cmd_line);
 int wait (pid_t);
 bool create (const char *file, unsigned initial_size);
 bool remove (const char *file);
