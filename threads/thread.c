@@ -13,7 +13,6 @@
 #include "intrinsic.h"
 #include "devices/timer.h"
 
-
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -78,7 +77,7 @@ static int is_init = 0;
 static struct lock tid_lock;
 
 /* Thread destruction requests */
-static struct list destruction_req;
+static struct list destr_req;
 
 // sleep 함수용 리스트.
 static struct list sleep_list;
@@ -129,7 +128,6 @@ bool thread_mlfqs;
 
 #define LOAD_AV_1 DIVI_X_Y(CONVERT_N_X(59),CONVERT_N_X(60))
 #define LOAD_AV_2 DIVI_X_Y(CONVERT_N_X(1),CONVERT_N_X(60))
-
 
 
 static void kernel_thread (thread_func *, void *aux);
@@ -189,7 +187,7 @@ thread_init (void) {
 	lock_init (&tid_lock);
 	list_init (&ready_list);
 	list_init (&all_list);
-	list_init (&destruction_req);
+	list_init (&destr_req);
 	// sleep list 용
 	list_init (&sleep_list);
 
@@ -730,9 +728,9 @@ static void
 do_schedule(int status) {
 	ASSERT (intr_get_level () == INTR_OFF);
 	ASSERT (thread_current()->status == THREAD_RUNNING);
-	while (!list_empty (&destruction_req)) {
+	while (!list_empty (&destr_req)) {
 		struct thread *victim =
-			list_entry (list_pop_front (&destruction_req), struct thread, elem);
+			list_entry (list_pop_front (&destr_req), struct thread, elem);
 		palloc_free_page(victim);
 	}
 	thread_current ()->status = status;
@@ -767,7 +765,7 @@ schedule (void) {
 		   schedule(). */
 		if (curr && curr->status == THREAD_DYING && curr != initial_thread) {
 			ASSERT (curr != next);
-			list_push_back (&destruction_req, &curr->elem);
+			list_push_back (&destr_req, &curr->elem);
 		}
 
 		/* Before switching the thread, we first save the information

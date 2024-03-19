@@ -107,16 +107,18 @@ struct thread {
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 	struct list_elem all_elem;
-	int64_t awake_ticks;
 	struct list lock_list;
-	int nice;
 	int32_t recent_cpu;
+	int64_t awake_ticks;				
+	int nice;
+
 	
 	/* Project 2-2 */
 	// struct semaphore wait;			/* 대기를 위한 세마포어 */
 	bool done;							/* 종료 상태를 나타내는 필드 */
 	bool file_loaded;					/* 파일 로드 성공했는가 */
 	struct file_desc_t fdt_list[MAX_FD_TABLE_SIZE];		/* 파일 디스크럽터 테이블 */
+
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

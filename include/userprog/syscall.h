@@ -39,6 +39,4 @@ unsigned tell (int fd);
 void close (int fd);
 int dup2(int oldfd, int newfd);
 
-void check_addr(char *addr);
-
 #endif /* userprog/syscall.h */
