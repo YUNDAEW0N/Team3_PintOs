@@ -305,6 +305,9 @@ thread_create (const char *name, int priority,
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
 
+	list_push_back(&cur->child_list,&t->child_elem);
+	t->parent=cur;
+
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
 	t->tf.rip = (uintptr_t) kernel_thread;
@@ -637,8 +640,14 @@ init_thread (struct thread *t, const char *name, int priority) {
 
 	/*fork*/
 	sema_init(&t->wait_sema,0);
+	sema_init(&t->exit_sema,0);
+	sema_init(&t->fork_sema,0);
 	list_init(&t->child_list);
+
+	t->is_wait = false;
+	t->exit_status = ALIVE_CHILD;
 	t->parent = NULL;
+	t->runfile = NULL;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

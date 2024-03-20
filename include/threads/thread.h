@@ -34,6 +34,9 @@ typedef int tid_t;
 #define RECENT_CPU_DEFAULT 0
 #define LOAD_AVG_DEFAULT 0
 
+#define ALIVE_CHILD -2
+#define ALREADY_WAIT -3
+
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -100,6 +103,7 @@ struct thread {
 
 	/*file_descriptor*/
 	struct file *fdt[64];
+	struct file *runfile;
 	int curr_fd;
 
 	/*일어날 시간 tick 추가해야 할듯*/
@@ -121,6 +125,11 @@ struct thread {
 	struct thread *parent;
 
 	struct semaphore wait_sema; // init_sema
+	struct semaphore exit_sema;
+	struct semaphore fork_sema;
+	int exit_status;
+	bool is_wait;
+
 	/*Adv Scheduler 관련*/
 	int nice;
 	int recent_cpu;

@@ -12,9 +12,15 @@
 #include "filesys/inode.h"
 #include "devices/input.h"
 #include "threads/palloc.h"
+#include "threads/synch.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+
+struct lock read_lock;
+struct lock write_lock;
+struct lock create_lock;
+
 
 
 
@@ -42,6 +48,11 @@ syscall_init (void) {
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
+
+
+	lock_init(&read_lock);
+	lock_init(&write_lock);
+	lock_init(&create_lock);
 }
 
 /* The main system call interface */
@@ -69,7 +80,7 @@ syscall_handler (struct intr_frame *f) {
 		f->R.rax = exec(f->R.rdi);
 		break;
 	case SYS_WAIT:
-		/* code */
+		f->R.rax = wait(f->R.rdi);
 		break;
 	case SYS_CREATE:
 		check_address(f->R.rdi);
@@ -119,7 +130,13 @@ void halt (void)
 }
 void exit (int status)
 {
-	printf ("%s: exit(%d)\n",thread_current()->name, status);
+	struct thread *curr = thread_current();
+
+	curr->exit_status = status;
+	// if(curr->parent && curr->parent->is_wait == true){
+	// 	curr->parent->is_wait = false;
+	// }
+	printf ("%s: exit(%d)\n",curr->name, status);
 	thread_exit();
 }
 
@@ -129,8 +146,6 @@ pid_t fork(const char *thread_name)
 }
 int exec (const char *cmd_line)
 {
-
-
 	char *cmd_copy;
 	cmd_copy = palloc_get_page(PAL_ZERO);
 
@@ -145,12 +160,15 @@ int exec (const char *cmd_line)
 }
 int wait (pid_t pid)
 {
-
+	return process_wait(pid);
 }
 
 bool create (const char *file, unsigned initial_size)
 {
-	if(filesys_create(file,initial_size))
+	lock_acquire(&create_lock);
+	bool ret= filesys_create(file,initial_size);
+	lock_release(&create_lock);
+	if(ret)
 		return true;
 	else
 		return false;
@@ -169,7 +187,6 @@ int open (const char *file)
 {
 	struct thread *curr = thread_current();
 	curr->fdt[curr->curr_fd]= filesys_open(file);
-
 	if (curr->fdt[curr->curr_fd])
 		return curr->curr_fd++;
 	else 
@@ -194,20 +211,20 @@ int read (int fd, void *buffer, unsigned length)
 {
 	if(fd<0 || fd>64)
 		return -1;
+	if (fd == 1 || fd == 2)
+		return -1;
 
 	struct thread *curr = thread_current();
-	struct file *file = curr->fdt[fd];
 	int file_size=0;
-
+	struct file *file = curr->fdt[fd];
 	if (file == NULL)
 		return -1;
 	if (fd == 0)
 		return input_getc();
-	if (fd == 1 || fd == 2)
-		return -1;
 
-
+	lock_acquire(&read_lock);
 	file_size = file_read(file,buffer,length);
+	lock_release(&read_lock);
 	return file_size;
 }
 
@@ -215,32 +232,37 @@ int write (int fd, const void *buffer, unsigned length)
 {
 	// putbuf(buffer, length);
 	struct thread *curr = thread_current();
-	struct file *file = curr->fdt[fd];
+	off_t ret;
 
 	if (fd<0 || fd>=64)
 		return -1;
-	else if (fd == 0 || fd == 2)
+	if (fd == 0 || fd == 2)
 		return -1;
-	else if(fd == 1)
+	struct file *file = curr->fdt[fd];
+	if(fd == 1)
 		putbuf(buffer, length);
 	
-	if(file)
-		return file_write(file,buffer,length);
+	if(file){
+		lock_acquire(&write_lock);
+		ret =file_write(file,buffer,length);
+		lock_release(&write_lock);
+		return ret;
+	}
 }
 void seek (int fd, unsigned position)
 {
-	if (fd<0 || fd>=0)
+	struct file *file = thread_current()->fdt[fd];
+	if (fd<0 || fd>=0 || file == NULL)
 		return;
 
-	struct file *file = thread_current()->fdt[fd];
 	file_seek(file,position);
 }
 unsigned tell (int fd)
 {
-	if (fd<0 || fd>=0)
+	struct file *file = thread_current()->fdt[fd];
+	if (fd<0 || fd>=0 || file == NULL)
 		return;
 
-	struct file *file = thread_current()->fdt[fd];
 	return file_tell(file);
 }
 void close (int fd)

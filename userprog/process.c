@@ -84,7 +84,7 @@ process_fork (const char *name, struct intr_frame *if_ ) {
 	tid =thread_create (name,PRI_DEFAULT, __do_fork, parent);
 	if (tid ==TID_ERROR)
 		return TID_ERROR;
-	sema_down(&parent->wait_sema);
+	sema_down(&parent->fork_sema);
 	return tid;
 	
 }
@@ -171,7 +171,7 @@ __do_fork (void *aux) {
 	}
 
 	// list_push_back(&parent->child_list,&current->child_elem);
-	sema_up(&parent->wait_sema);
+	sema_up(&parent->fork_sema);
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
@@ -265,7 +265,6 @@ if(success){
 	palloc_free_page (file_name);
 	if (!success){
 		exit(-1);
-		// return -1;
 	}
 
 	//hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
@@ -285,11 +284,36 @@ if(success){
  * This function will be implemented in problem 2-2.  For now, it
  * does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) {
+process_wait (tid_t child_tid) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	timer_sleep(10);
+	// timer_sleep(10);
+
+	struct thread *curr = thread_current();
+	struct thread *child=NULL;
+	struct list_elem *e;
+	int ret = -1;
+
+	for (e = list_begin(&curr->child_list);e != list_end(&curr->child_list);e = list_next(e)){
+		struct thread *tmp = list_entry(e, struct thread,child_elem);
+		if (tmp->tid == child_tid){
+			child = tmp;
+			// if(tmp->status != ALREADY_WAIT){
+			// 	curr->is_wait = true;
+			// 	tmp->exit_status = ALREADY_WAIT;
+			// }
+		}
+	}
+
+	if(child==NULL)
+		return -1;
+
+	sema_down(&child->wait_sema);
+	ret = child->exit_status;
+	list_remove(&child->child_elem);
+	sema_up(&child->exit_sema);
+	return ret;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -300,7 +324,9 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-
+	sema_up(&curr->wait_sema);
+	file_close(curr->runfile);
+	sema_down(&curr->exit_sema);
 	process_cleanup ();
 }
 
@@ -433,6 +459,8 @@ load (const char *file_name, struct intr_frame *if_) {
 		printf ("load: %s: open failed\n", file_copy);
 		goto done;
 	}
+	t->runfile = file;
+	file_deny_write(t->runfile);
 
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -513,7 +541,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 done:
 	/* We arrive here whether the load is successful or not. */
-	file_close (file);
+	//file_close (file);
 	return success;
 }
 
