@@ -203,7 +203,6 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
-	// printf("file_name : %s\n",file_name);
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
@@ -451,7 +450,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	
 	strlcpy(file_copy,file_name,128);
 	strtok_r(file_copy," ",&save_ptr);
-	// printf("file_copy :%s\n", file_copy);
 
 	/* Open executable file. */
 	file = filesys_open (file_copy);
