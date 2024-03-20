@@ -80,7 +80,6 @@ process_fork (const char *name, struct intr_frame *if_ ) {
 	struct thread *parent =thread_current();
 	struct tid *tid;
 
-	memcpy(&parent->parent_if,if_,sizeof(struct intr_frame *));
 
 	tid =thread_create (name,PRI_DEFAULT, __do_fork, parent);
 	if (tid ==TID_ERROR)
@@ -172,18 +171,12 @@ __do_fork (void *aux) {
 	}
 
 	// list_push_back(&parent->child_list,&current->child_elem);
-
-	// printf("###############1\n");
 	sema_up(&parent->wait_sema);
-	// printf("###############2\n");
-
 	process_init ();
-	// printf("###############3\n");
 
 	/* Finally, switch to the newly created process. */
 	if (succ){
 		if_.R.rax=0;
-		// printf("############### : %d\n",if_.R.rax);
 		do_iret (&if_);
 	}
 	
@@ -198,10 +191,7 @@ process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
 	char *save_ptr;
-	int arg_cnt=1;
-	int total_size=0;
-
-
+	
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -213,8 +203,15 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
+	// printf("file_name : %s\n",file_name);
+	/* And then load the binary */
+	success = load (file_name, &_if);
 
+	/*-----------------------------------------------------*/
 
+if(success){
+	int arg_cnt=1;
+	int total_size=0;
 	for(int i=0;i<strlen(file_name);i++)
 	{
 		if(file_name[i] == ' ' && file_name[i+1]!=' '){
@@ -229,12 +226,6 @@ process_exec (void *f_name) {
 		arg_list[i] = strtok_r((i == 0) ? file_name : NULL, " ", &save_ptr);
 	}
 	
-
-	/* And then load the binary */
-	success = load (arg_list[0], &_if);
-
-	/*-----------------------------------------------------*/
-
 	for(int i=arg_cnt-1;i>=0;i--)
 	{
 		// printf("_if.rsp :%x\n",_if.rsp);
@@ -266,13 +257,16 @@ process_exec (void *f_name) {
 
 	_if.R.rdi = arg_cnt;
 	_if.R.rsi = _if.rsp+8;
+}
 
 	/*-----------------------------------------------------*/
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
-	if (!success)
-		return -1;
+	if (!success){
+		exit(-1);
+		// return -1;
+	}
 
 	//hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 	/* Start switched process. */
@@ -419,7 +413,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	off_t file_ofs;
 	bool success = false;
 	int i;
-	char *save_ptr, *file_copy;
+	char *save_ptr, file_copy[128];
 
 	
 	t->pml4 = pml4_create ();
@@ -429,11 +423,14 @@ load (const char *file_name, struct intr_frame *if_) {
 	
 	process_activate (thread_current ());
 	
+	strlcpy(file_copy,file_name,128);
+	strtok_r(file_copy," ",&save_ptr);
+	// printf("file_copy :%s\n", file_copy);
 
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	file = filesys_open (file_copy);
 	if (file == NULL) {
-		printf ("load: %s: open failed\n", file_name);
+		printf ("load: %s: open failed\n", file_copy);
 		goto done;
 	}
 

@@ -11,6 +11,7 @@
 #include "filesys/file.h"
 #include "filesys/inode.h"
 #include "devices/input.h"
+#include "threads/palloc.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -45,7 +46,7 @@ syscall_init (void) {
 
 /* The main system call interface */
 void
-syscall_handler (struct intr_frame *f UNUSED) {
+syscall_handler (struct intr_frame *f) {
 	// TODO: Your implementation goes here.
 	// printf ("system call!\n");
 	// thread_exit ();
@@ -60,6 +61,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		break;
 	case SYS_FORK:
 		check_address(f->R.rdi);
+		memcpy(&thread_current()->parent_if,f,sizeof(struct intr_frame));
 		f->R.rax = fork(f->R.rdi);
 		break;
 	case SYS_EXEC:
@@ -121,17 +123,24 @@ void exit (int status)
 	thread_exit();
 }
 
-pid_t fork (const char *thread_name)
+pid_t fork(const char *thread_name)
 {
-	struct thread *parent = thread_current();
-	
-	return process_fork(thread_name,&parent->parent_if);
+	return process_fork(thread_name,thread_current()->parent_if);
 }
 int exec (const char *cmd_line)
 {
-	printf("cmd_line : %s\n", cmd_line);
-	if (process_exec(cmd_line)<0)
+
+
+	char *cmd_copy;
+	cmd_copy = palloc_get_page(PAL_ZERO);
+
+	if(cmd_copy == NULL)
 		return -1;
+	strlcpy(cmd_copy,cmd_line,PGSIZE);
+	
+	if (process_exec(cmd_copy)<0){
+		return -1;
+	}
 	NOT_REACHED();
 }
 int wait (pid_t pid)
