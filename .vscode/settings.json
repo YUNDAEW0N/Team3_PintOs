@@ -20,6 +20,8 @@
         "inode.h": "c",
         "gdt.h": "c",
         "thread.h": "c",
-        "input.h": "c"
+        "input.h": "c",
+        "vm.h": "c",
+        "uninit.h": "c"
     }
 }
